@@ -3,6 +3,7 @@ import type { VocabularyItem } from "../db";
 import { CollectionList } from "./CollectionList";
 import { CollectionPage } from "./CollectionPage";
 import { FlashcardSession } from "./FlashcardSession";
+import { ItemDetails } from "./ItemDetails";
 import { ItemEditor } from "./ItemEditor";
 import { ItemForm } from "./ItemForm";
 import { addItem } from "./store";
@@ -11,6 +12,7 @@ type View =
   | { name: "collections" }
   | { name: "collection"; collectionId: string }
   | { name: "addItem"; collectionId: string }
+  | { name: "item"; collectionId: string; itemId: string }
   | { name: "editItem"; collectionId: string; itemId: string }
   | { name: "study"; collectionId: string; items: VocabularyItem[] };
 
@@ -31,6 +33,7 @@ export function VocabularyArea() {
           collectionId={collectionId}
           onBack={() => setView({ name: "collections" })}
           onAddItem={() => setView({ name: "addItem", collectionId })}
+          onOpenItem={(itemId) => setView({ name: "item", collectionId, itemId })}
           onEditItem={(itemId) => setView({ name: "editItem", collectionId, itemId })}
           onStudy={(items) => setView({ name: "study", collectionId, items })}
         />
@@ -46,6 +49,16 @@ export function VocabularyArea() {
           onSave={(fields) => {
             void addItem(collectionId, fields).then(backToCollection);
           }}
+        />
+      );
+    }
+    case "item": {
+      const { collectionId, itemId } = view;
+      return (
+        <ItemDetails
+          itemId={itemId}
+          onBack={() => setView({ name: "collection", collectionId })}
+          onEdit={() => setView({ name: "editItem", collectionId, itemId })}
         />
       );
     }

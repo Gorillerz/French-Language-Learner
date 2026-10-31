@@ -5,11 +5,19 @@ type Props = {
   collectionId: string;
   onBack: () => void;
   onAddItem: () => void;
+  onOpenItem: (itemId: string) => void;
   onEditItem: (itemId: string) => void;
   onStudy: (items: VocabularyItem[]) => void;
 };
 
-export function CollectionPage({ collectionId, onBack, onAddItem, onEditItem, onStudy }: Props) {
+export function CollectionPage({
+  collectionId,
+  onBack,
+  onAddItem,
+  onOpenItem,
+  onEditItem,
+  onStudy,
+}: Props) {
   const collection = useCollection(collectionId);
   const items = useItems(collectionId);
   const lastRatings = useLastRatings(collectionId);
@@ -43,14 +51,24 @@ export function CollectionPage({ collectionId, onBack, onAddItem, onEditItem, on
                 <span className="item-english">{item.english}</span>
                 {lastRating && <span className="item-rating">Last rating: {lastRating}</span>}
               </span>
-              <button
-                type="button"
-                className="link-button"
-                aria-label={`Edit ${item.french}`}
-                onClick={() => onEditItem(item.id)}
-              >
-                Edit
-              </button>
+              <span className="item-actions">
+                <button
+                  type="button"
+                  className="link-button"
+                  aria-label={`Details for ${item.french}`}
+                  onClick={() => onOpenItem(item.id)}
+                >
+                  Details
+                </button>
+                <button
+                  type="button"
+                  className="link-button"
+                  aria-label={`Edit ${item.french}`}
+                  onClick={() => onEditItem(item.id)}
+                >
+                  Edit
+                </button>
+              </span>
             </li>
           );
         })}

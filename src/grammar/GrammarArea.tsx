@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TopicHelp } from "../ai/TopicHelp";
 import type { RatingValue } from "../db";
 import { grammarConcepts, type GrammarConcept } from "./content";
 import { FlashcardPractice } from "./FlashcardPractice";
@@ -95,6 +96,12 @@ function ConceptPage({ concept, onPractise, onBack }: ConceptPageProps) {
           </button>
         ))}
       </div>
+
+      <TopicHelp
+        action="ask-about-grammar-concept"
+        title={`Ask AI about ${concept.title}`}
+        topic={`Grammar concept: ${concept.title}\nSummary: ${concept.summary}`}
+      />
     </article>
   );
 }

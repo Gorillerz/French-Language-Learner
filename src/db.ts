@@ -16,6 +16,11 @@ export type VocabularyItem = {
   french: string;
   english: string;
   definition: string;
+  explanation: string;
+  etymology: string;
+  history: string;
+  synonyms: string;
+  /** One or more example sentences, one per line. */
   example: string;
   pronunciation: string;
   position: number;
@@ -79,6 +84,14 @@ export type SyncDevice = {
   cursorTables: string;
 };
 
+/** One Learner-selected setting. `value` is whatever the setting's owner stores. */
+export type Setting = {
+  id: string;
+  value: unknown;
+  /** ISO 8601. */
+  savedAt: string;
+};
+
 export const db = new Dexie("french-learning") as Dexie & {
   collections: EntityTable<Collection, "id">;
   vocabularyItems: EntityTable<VocabularyItem, "id">;
@@ -86,6 +99,7 @@ export const db = new Dexie("french-learning") as Dexie & {
   quizAttempts: EntityTable<QuizAttempt, "id">;
   syncedVersions: EntityTable<SyncedVersion, "key">;
   syncDevice: EntityTable<SyncDevice, "id">;
+  settings: EntityTable<Setting, "id">;
 };
 
 db.version(1).stores({
@@ -101,6 +115,10 @@ db.version(2).stores({
 db.version(3).stores({
   syncedVersions: "key",
   syncDevice: "id",
+});
+
+db.version(4).stores({
+  settings: "id, savedAt",
 });
 
 db.on("populate", async (tx) => {

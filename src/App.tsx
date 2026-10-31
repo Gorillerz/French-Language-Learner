@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AiArea } from "./ai/AiArea";
 import { useConnection, useConnectionNotice, type Connection } from "./connection";
 import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
@@ -8,7 +9,7 @@ import { startSync, useSyncState, type SyncStatus } from "./sync/engine";
 import { SyncArea } from "./sync/SyncArea";
 import { VocabularyArea } from "./vocabulary/VocabularyArea";
 
-const areas = ["Vocabulary", "Grammar", "Quiz", "Progress", "Sync"] as const;
+const areas = ["Vocabulary", "Grammar", "Quiz", "Progress", "Sync", "AI"] as const;
 type Area = (typeof areas)[number];
 
 const connectionLabels: Record<Connection, string> = {
@@ -96,6 +97,7 @@ export function App() {
         {area === "Quiz" && <QuizArea />}
         {area === "Progress" && <ProgressArea />}
         {area === "Sync" && <SyncArea />}
+        {area === "AI" && <AiArea />}
       </main>
     </div>
   );
