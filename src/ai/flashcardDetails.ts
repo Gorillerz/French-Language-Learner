@@ -1,7 +1,7 @@
 import type { VocabularyItem } from "../db";
 import { AiError, prepareAiRequest } from "./client";
 
-/** The details AI may write. Pronunciation is left to the Learner and built-in content. */
+/** The details AI may write. */
 export const generatableDetails = [
   "definition",
   "explanation",
@@ -9,6 +9,7 @@ export const generatableDetails = [
   "history",
   "synonyms",
   "example",
+  "pronunciation",
 ] as const;
 
 export type GeneratableDetail = (typeof generatableDetails)[number];
@@ -21,6 +22,7 @@ const descriptions: Record<GeneratableDetail, string> = {
   history: "how its use has changed, in English",
   synonyms: "French synonyms, separated by commas",
   example: "French example sentences, one per line",
+  pronunciation: "its pronunciation in IPA, between slashes",
 };
 
 export function blankDetails(item: VocabularyItem) {

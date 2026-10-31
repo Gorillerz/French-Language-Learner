@@ -35,3 +35,6 @@ export const aiTarget = checkAiUrl(import.meta.env.VITE_AI_BASE_URL);
 
 /** How often a set-up device asks the cloud for changes. Tests shorten it. */
 export const syncPollMs = Number(import.meta.env.VITE_SYNC_POLL_MS ?? 30_000);
+
+/** How long an AI request may take. Long enough for a batch of questions. Tests shorten it. */
+export const aiTimeoutMs = Number(import.meta.env.VITE_AI_TIMEOUT_MS ?? 90_000);

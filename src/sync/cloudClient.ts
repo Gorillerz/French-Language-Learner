@@ -8,6 +8,8 @@ const PULL_PAGE_SIZE = 200;
 
 /** No answer, a timeout, or a server fault: try again later. */
 export class CloudUnreachableError extends Error {}
+/** The cloud answered and turned the request down, so waiting for a connection won't help. */
+export class CloudRefusedError extends Error {}
 /** The token or the sign-in details were refused. */
 export class SignInRequiredError extends Error {}
 export class AccountExistsError extends Error {}
@@ -59,7 +61,7 @@ async function parsed<T>(response: Response) {
 }
 
 async function expectOk(response: Response) {
-  if (!response.ok) throw new CloudUnreachableError(`Unexpected status ${response.status}`);
+  if (!response.ok) throw new CloudRefusedError(`Unexpected status ${response.status}`);
   return response;
 }
 

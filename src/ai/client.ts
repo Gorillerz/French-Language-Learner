@@ -1,4 +1,4 @@
-import { aiTarget } from "../serviceConfig";
+import { aiTarget, aiTimeoutMs } from "../serviceConfig";
 import { getSetting, setSetting } from "../settings";
 
 /**
@@ -96,18 +96,23 @@ export async function sendAiRequest({ model, messages }: PreparedAiRequest, sign
   const key = await getAiKey();
   if (!key) throw new AiError("Add your OpenRouter API key in the AI area first.");
 
-  let response: Response;
+  const timeout = AbortSignal.timeout(aiTimeoutMs);
   try {
-    response = await fetch(`${aiTarget.baseUrl}/chat/completions`, {
+    const response = await fetch(`${aiTarget.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({ model, messages }),
-      signal,
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      credentials: "omit",
+      // A redirect could carry the API key away from the HTTPS address that was checked.
+      redirect: "error",
     });
+    if (!response.ok) throw failureFor(response.status);
+    return await readReply(response);
   } catch (error) {
     if (signal?.aborted) throw error;
+    if (timeout.aborted) throw new AiError("The AI service took too long to answer. Try again.");
+    if (error instanceof AiError) throw error;
     throw new AiError("Could not reach the AI service. Check your connection and try again.");
   }
-  if (!response.ok) throw failureFor(response.status);
-  return readReply(response);
 }

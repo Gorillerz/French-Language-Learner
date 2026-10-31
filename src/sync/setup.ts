@@ -4,7 +4,9 @@ import {
   createKeyBundle,
   generateRecoveryCode,
   isLongEnough,
+  isRepetitive,
   MIN_PASSPHRASE_LENGTH,
+  normalizePassphrase,
   replacePassphrase,
   unlockWithPassphrase,
   type KeyBundle,
@@ -31,6 +33,13 @@ export async function createAccount(email: string, signInPassword: string): Prom
   return { email, signInPassword, token: await cloud.signUp(email, signInPassword) };
 }
 
+/** For recovery on a device already set up, which holds no sign-in password. */
+export async function signInOnThisDevice(signInPassword: string) {
+  const device = await db.syncDevice.get("this");
+  if (!device) throw new Error("This device is not set up");
+  return signIn(device.email, signInPassword);
+}
+
 export function findKeyBundle({ token }: Session) {
   return cloud.getKeyBundle(token);
 }
@@ -41,7 +50,10 @@ export function findKeyBundle({ token }: Session) {
  */
 export function passphraseProblem(passphrase: string, repeated: string, session: Session) {
   if (!isLongEnough(passphrase)) return `Use at least ${MIN_PASSPHRASE_LENGTH} characters.`;
-  if (passphrase === session.signInPassword) {
+  if (isRepetitive(passphrase)) {
+    return "That only repeats a short pattern, which is easy to guess. Use varied words instead.";
+  }
+  if (normalizePassphrase(passphrase) === normalizePassphrase(session.signInPassword)) {
     return "Your passphrase must be different from your sign-in password.";
   }
   if (passphrase !== repeated) return "The two passphrases do not match.";

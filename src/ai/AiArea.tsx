@@ -32,7 +32,9 @@ function AiSettingsForm({ savedModel }: { savedModel: string }) {
     <form className="vocabulary stack-form" onSubmit={(event) => void save(event)}>
       <p>
         AI help runs only when you ask for it, and shows you what will be sent first. It uses your
-        own OpenRouter API key, which goes only to the AI service.
+        own OpenRouter API key, which is sent to the AI service with each request. If you set up
+        sync, the key also reaches your other devices through the cloud, end-to-end encrypted like
+        the rest of your settings, so the cloud cannot read it.
       </p>
       <label>
         OpenRouter API key

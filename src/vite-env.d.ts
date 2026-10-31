@@ -4,4 +4,5 @@ interface ImportMetaEnv {
   readonly VITE_CLOUD_BASE_URL?: string;
   readonly VITE_AI_BASE_URL?: string;
   readonly VITE_SYNC_POLL_MS?: string;
+  readonly VITE_AI_TIMEOUT_MS?: string;
 }

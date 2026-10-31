@@ -67,6 +67,7 @@ type FlashcardProps = {
 function Flashcard({ item, onRate }: FlashcardProps) {
   const [revealed, setRevealed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const labelled = [
     { label: "Explanation", text: item.explanation },
     { label: "Etymology", text: item.etymology },
@@ -75,6 +76,18 @@ function Flashcard({ item, onRate }: FlashcardProps) {
   ].filter(({ text }) => text);
   const hasDetails =
     item.definition || item.example || item.pronunciation || labelled.length > 0;
+
+  async function rate(rating: RatingValue) {
+    setSaving(true);
+    setSaveFailed(false);
+    try {
+      await onRate(rating);
+    } catch {
+      setSaveFailed(true);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <article className="flashcard" role="region" aria-label="Flashcard">
@@ -106,15 +119,13 @@ function Flashcard({ item, onRate }: FlashcardProps) {
                 type="button"
                 className="action-button"
                 disabled={saving}
-                onClick={() => {
-                  setSaving(true);
-                  onRate(rating).catch(() => setSaving(false));
-                }}
+                onClick={() => void rate(rating)}
               >
                 {label ? `${rating} ${label}` : rating}
               </button>
             ))}
           </div>
+          {saveFailed && <p role="alert">That rating couldn't be saved. Please try again.</p>}
         </>
       ) : (
         <button type="button" className="primary-button" onClick={() => setRevealed(true)}>

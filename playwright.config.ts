@@ -30,6 +30,7 @@ export default defineConfig({
       VITE_CLOUD_BASE_URL: `http://127.0.0.1:${cloudPort}`,
       VITE_AI_BASE_URL: `http://127.0.0.1:${aiPort}`,
       VITE_SYNC_POLL_MS: "400",
+      VITE_AI_TIMEOUT_MS: "6000",
     },
   },
 });
