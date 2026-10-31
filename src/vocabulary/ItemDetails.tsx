@@ -60,7 +60,6 @@ export function ItemDetails({ itemId, onBack, onEdit }: Props) {
       <FillBlankDetails item={item} />
       <TopicHelp
         action="ask-about-flashcard"
-        title={`Ask AI about ${item.french}`}
         topic={`French: ${item.french}\nEnglish: ${item.english}`}
       />
     </section>

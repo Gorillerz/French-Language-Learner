@@ -23,6 +23,10 @@ const allDetails = {
   example: "La réunion commence à neuf heures.",
 };
 
+async function openApp({ page }: { page: Page }) {
+  await page.goto("/");
+}
+
 async function openArea(page: Page, name: string) {
   await page.getByRole("button", { name, exact: true }).click();
 }
@@ -90,11 +94,9 @@ async function joinSync(page: Page) {
   await expect(page.getByRole("status", { name: "Sync" })).toHaveText("Sync: up to date");
 }
 
-test.beforeEach(async ({ page }) => {
-  await page.goto("/");
-});
-
 test.describe("filling blank flashcard details", () => {
+  test.beforeEach(openApp);
+
   test("the Learner sees exactly what is sent, sends it, and gets saved details", async ({ page, ai }) => {
     ai.respond("POST", "/chat/completions", generated(allDetails));
     await saveKey(page);
@@ -278,69 +280,11 @@ test.describe("filling blank flashcard details", () => {
     await expect(card.getByText(allDetails.history)).toBeVisible();
     await expect(card.getByText(allDetails.example)).toBeVisible();
   });
-
-  test("cards saved before these details existed can be opened, edited and filled", async ({ page, ai }) => {
-    ai.respond("POST", "/chat/completions", generated(allDetails));
-    await page.goto("/icon.svg");
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve, reject) => {
-          // Dexie stores version 1 of a schema as native version 10.
-          const open = indexedDB.open("french-learning", 10);
-          open.onerror = () => reject(open.error);
-          open.onupgradeneeded = () => {
-            const connection = open.result;
-            const collections = connection.createObjectStore("collections", { keyPath: "id" });
-            collections.createIndex("position", "position");
-            const items = connection.createObjectStore("vocabularyItems", { keyPath: "id" });
-            items.createIndex("collectionId", "collectionId");
-            const ratings = connection.createObjectStore("flashcardRatings", { keyPath: "id" });
-            for (const index of ["kind", "cardId", "topicId", "sessionId", "ratedAt", "savedAt"]) {
-              ratings.createIndex(index, index);
-            }
-            const savedAt = "2026-01-01T00:00:00.000Z";
-            collections.add({ id: "mine", name: "Mes mots", position: 0, savedAt });
-            items.add({
-              id: "mine-1",
-              collectionId: "mine",
-              french: "la réunion",
-              english: "the meeting",
-              definition: "Mine.",
-              example: "",
-              pronunciation: "",
-              position: 0,
-              savedAt,
-            });
-          };
-          open.onsuccess = () => {
-            open.result.close();
-            resolve();
-          };
-        }),
-    );
-
-    await page.goto("/");
-    await saveKey(page);
-    await openArea(page, "Vocabulary");
-    await page.getByRole("button", { name: "Open Mes mots" }).click();
-
-    await page.getByRole("button", { name: "Edit la réunion" }).click();
-    await expect(page.getByLabel("Etymology")).toHaveValue("");
-    await page.getByRole("button", { name: "Cancel" }).click();
-
-    await openDetails(page, "la réunion");
-    await page.getByRole("button", { name: "Fill blank details" }).click();
-    await sendButton(page).click();
-
-    await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
-      "Filled 5 blank details.",
-    );
-    await expect(page.getByText("Mine.")).toBeVisible();
-    await expect(page.getByText(allDetails.etymology)).toBeVisible();
-  });
 });
 
 test.describe("topic help", () => {
+  test.beforeEach(openApp);
+
   test("the Learner asks about a flashcard, with follow-ups, and nothing is kept", async ({ page, ai }) => {
     await saveKey(page);
     await createCard(page, "Au bureau", "la réunion", "the meeting");
@@ -403,6 +347,8 @@ test.describe("topic help", () => {
 });
 
 test.describe("what is shared", () => {
+  test.beforeEach(openApp);
+
   test("a request carries nothing unrelated to the card", async ({ page, ai }) => {
     ai.respond("POST", "/chat/completions", generated(allDetails));
     await saveKey(page);
@@ -516,6 +462,8 @@ test.describe("what is shared", () => {
 });
 
 test.describe("when AI cannot run", () => {
+  test.beforeEach(openApp);
+
   test("without a key each action explains what is needed", async ({ page, ai }) => {
     await createCard(page, "Au bureau", "la réunion", "the meeting");
     await openDetails(page, "la réunion");
@@ -633,4 +581,64 @@ test.describe("when AI cannot run", () => {
     await expect(page.getByRole("alert")).toContainText("limiting requests");
     await expect(page.getByRole("list", { name: "AI answers" })).toHaveCount(0);
   });
+});
+
+test("cards saved before these details existed can be opened, edited and filled", async ({ page, ai }) => {
+  ai.respond("POST", "/chat/completions", generated(allDetails));
+  await page.goto("/icon.svg");
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        // Dexie stores version 1 of a schema as native version 10.
+        const open = indexedDB.open("french-learning", 10);
+        open.onerror = () => reject(open.error);
+        open.onupgradeneeded = () => {
+          const connection = open.result;
+          const collections = connection.createObjectStore("collections", { keyPath: "id" });
+          collections.createIndex("position", "position");
+          const items = connection.createObjectStore("vocabularyItems", { keyPath: "id" });
+          items.createIndex("collectionId", "collectionId");
+          const ratings = connection.createObjectStore("flashcardRatings", { keyPath: "id" });
+          for (const index of ["kind", "cardId", "topicId", "sessionId", "ratedAt", "savedAt"]) {
+            ratings.createIndex(index, index);
+          }
+          const savedAt = "2026-01-01T00:00:00.000Z";
+          collections.add({ id: "mine", name: "Mes mots", position: 0, savedAt });
+          items.add({
+            id: "mine-1",
+            collectionId: "mine",
+            french: "la réunion",
+            english: "the meeting",
+            definition: "Mine.",
+            example: "",
+            pronunciation: "",
+            position: 0,
+            savedAt,
+          });
+        };
+        open.onsuccess = () => {
+          open.result.close();
+          resolve();
+        };
+      }),
+  );
+
+  await page.goto("/");
+  await saveKey(page);
+  await openArea(page, "Vocabulary");
+  await page.getByRole("button", { name: "Open Mes mots" }).click();
+
+  await page.getByRole("button", { name: "Edit la réunion" }).click();
+  await expect(page.getByLabel("Etymology")).toHaveValue("");
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  await openDetails(page, "la réunion");
+  await page.getByRole("button", { name: "Fill blank details" }).click();
+  await sendButton(page).click();
+
+  await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
+    "Filled 5 blank details.",
+  );
+  await expect(page.getByText("Mine.")).toBeVisible();
+  await expect(page.getByText(allDetails.etymology)).toBeVisible();
 });

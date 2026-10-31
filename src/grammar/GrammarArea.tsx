@@ -99,7 +99,6 @@ function ConceptPage({ concept, onPractise, onBack }: ConceptPageProps) {
 
       <TopicHelp
         action="ask-about-grammar-concept"
-        title={`Ask AI about ${concept.title}`}
         topic={`Grammar concept: ${concept.title}\nSummary: ${concept.summary}`}
       />
     </article>

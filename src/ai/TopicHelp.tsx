@@ -5,7 +5,6 @@ import { useAiBlocker } from "./useAiBlocker";
 
 type Props = {
   action: LearnerAction;
-  title: string;
   /** The minimum that identifies the topic. It is sent with every question. */
   topic: string;
 };
@@ -13,7 +12,7 @@ type Props = {
 type Turn = { question: string; answer: string };
 
 /** Answers live here only: leaving the page ends the conversation. */
-export function TopicHelp({ action, title, topic }: Props) {
+export function TopicHelp({ action, topic }: Props) {
   const { isBlocked, explanation } = useAiBlocker();
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -37,7 +36,7 @@ export function TopicHelp({ action, title, topic }: Props) {
 
   return (
     <div className="ai-action">
-      <h4>{title}</h4>
+      <h4>Topic help</h4>
       {turns.length > 0 && (
         <ul className="row-list" aria-label="AI answers">
           {turns.map((turn, index) => (
