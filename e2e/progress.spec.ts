@@ -1,62 +1,14 @@
-import type { Page } from "@playwright/test";
-import { answer, openArea, quizQuestion, startTopicQuiz } from "./support/quizzes";
+import {
+  flashcardRatings,
+  practiseConcept,
+  quizResults,
+  sessions,
+  studyCollection,
+  takeQuiz,
+  topicRow,
+} from "./support/progress";
+import { answer, openArea, quizQuestion } from "./support/quizzes";
 import { expect, test } from "./support/test";
-
-function quizResults(page: Page) {
-  return page.getByRole("region", { name: "Quiz results" });
-}
-
-function flashcardRatings(page: Page) {
-  return page.getByRole("region", { name: "Flashcard ratings" });
-}
-
-function sessions(page: Page) {
-  return page.getByRole("list", { name: "Sessions" }).getByRole("listitem");
-}
-
-function topicRow(section: ReturnType<Page["getByRole"]>, topic: string) {
-  return section.getByRole("listitem").filter({ hasText: topic });
-}
-
-/** Answers the first questions of a focused quiz, one per entry, then ends the quiz. */
-async function takeQuiz(page: Page, topic: string, answers: boolean[]) {
-  await openArea(page, "Quiz");
-  await startTopicQuiz(page, topic);
-  for (const [index, correctly] of answers.entries()) {
-    await expect(quizQuestion(page)).toContainText(`Question ${index + 1} of`);
-    await answer(page, { correctly });
-  }
-  await page.getByRole("button", { name: "End quiz" }).click();
-  await page.getByRole("button", { name: "Back to quizzes" }).click();
-}
-
-/** Rates the first cards of a collection, one per entry, then ends the session. */
-async function studyCollection(page: Page, collection: string, ratings: string[]) {
-  await openArea(page, "Vocabulary");
-  await page.getByRole("button", { name: `Open ${collection}` }).click();
-  await page.getByRole("button", { name: "Study flashcards" }).click();
-  for (const [index, rating] of ratings.entries()) {
-    await expect(page.getByText(`Card ${index + 1} of`)).toBeVisible();
-    await page.getByRole("button", { name: "Show English" }).click();
-    await page.getByRole("button", { name: rating, exact: true }).click();
-  }
-  await page.getByRole("button", { name: "End session" }).click();
-  await page.getByRole("button", { name: "Back to collection" }).click();
-  await page.getByRole("button", { name: "Back to collections" }).click();
-}
-
-/** Rates the first cards of a grammar concept, one per entry, then leaves. */
-async function practiseConcept(page: Page, concept: string, ratings: string[]) {
-  await openArea(page, "Grammar");
-  await page.getByRole("button", { name: concept }).click();
-  await page.getByRole("button", { name: "French to English" }).click();
-  for (const [index, rating] of ratings.entries()) {
-    await expect(page.getByText(`Card ${index + 1} of`)).toBeVisible();
-    await page.getByRole("button", { name: "Show answer" }).click();
-    await page.getByRole("button", { name: rating, exact: true }).click();
-  }
-  await page.getByRole("button", { name: `Back to ${concept}` }).click();
-}
 
 test("before any study, Progress says there is nothing to report yet", async ({ page }) => {
   await page.goto("/");

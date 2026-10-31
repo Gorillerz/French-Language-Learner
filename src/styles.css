@@ -194,6 +194,19 @@ p {
   grid-template-columns: repeat(2, 1fr);
 }
 
+.direction-choice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.direction-choice label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+}
+
 .flashcard-text {
   font-size: 1.25rem;
 }
