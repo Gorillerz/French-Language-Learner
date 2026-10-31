@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCloudUrl } from "./serviceConfig";
+import { checkAiUrl, checkCloudUrl } from "./serviceConfig";
 
 describe("cloud URL", () => {
   it("accepts HTTPS", () => {
@@ -32,5 +32,24 @@ describe("cloud URL", () => {
   it("reports that no cloud is configured", () => {
     expect(checkCloudUrl(undefined)).toEqual({ available: false, reason: "missing" });
     expect(checkCloudUrl("")).toEqual({ available: false, reason: "missing" });
+  });
+});
+
+describe("AI URL", () => {
+  it("defaults to OpenRouter when the build sets nothing", () => {
+    const openRouter = { available: true, baseUrl: "https://openrouter.ai/api/v1" };
+    expect(checkAiUrl(undefined)).toEqual(openRouter);
+    expect(checkAiUrl("")).toEqual(openRouter);
+  });
+
+  it("follows the build's URL", () => {
+    expect(checkAiUrl("http://127.0.0.1:4512/")).toEqual({
+      available: true,
+      baseUrl: "http://127.0.0.1:4512",
+    });
+  });
+
+  it("refuses a URL that would carry the API key in the clear", () => {
+    expect(checkAiUrl("http://ai.example.com")).toEqual({ available: false, reason: "insecure" });
   });
 });

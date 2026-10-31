@@ -16,6 +16,11 @@ export type VocabularyItem = {
   french: string;
   english: string;
   definition: string;
+  explanation: string;
+  etymology: string;
+  history: string;
+  synonyms: string;
+  /** One or more example sentences, one per line. */
   example: string;
   pronunciation: string;
   position: number;

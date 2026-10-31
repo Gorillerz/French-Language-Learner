@@ -43,5 +43,8 @@ A generated code, saved by the learner, that sets a new passphrase when the old 
 **Sign-in**:
 The ordinary account that identifies the learner to the sync service. Resetting it cannot restore encrypted data.
 
+**Topic help**:
+Questions the learner asks AI about one flashcard or grammar concept. The answers are not saved.
+
 **Review priority**:
 The relative order in which questions are worth reviewing. It is never a due date or a mastery level.

@@ -67,7 +67,14 @@ type FlashcardProps = {
 function Flashcard({ item, onRate }: FlashcardProps) {
   const [revealed, setRevealed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const hasDetails = item.definition || item.example || item.pronunciation;
+  const labelled = [
+    { label: "Explanation", text: item.explanation },
+    { label: "Etymology", text: item.etymology },
+    { label: "History", text: item.history },
+    { label: "Synonyms", text: item.synonyms },
+  ].filter(({ text }) => text);
+  const hasDetails =
+    item.definition || item.example || item.pronunciation || labelled.length > 0;
 
   return (
     <article className="flashcard" role="region" aria-label="Flashcard">
@@ -79,7 +86,16 @@ function Flashcard({ item, onRate }: FlashcardProps) {
             <details>
               <summary>Details</summary>
               {item.definition && <p>{item.definition}</p>}
-              {item.example && <p lang="fr">{item.example}</p>}
+              {labelled.map(({ label, text }) => (
+                <p key={label}>
+                  <strong>{label}:</strong> {text}
+                </p>
+              ))}
+              {item.example && (
+                <p lang="fr" className="multiline">
+                  {item.example}
+                </p>
+              )}
               {item.pronunciation && <p>{item.pronunciation}</p>}
             </details>
           )}

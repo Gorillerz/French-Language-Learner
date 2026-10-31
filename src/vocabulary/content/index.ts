@@ -20,6 +20,10 @@ export const seedCollections: Collection[] = builtInCollections.map(({ id, name 
 export const seedItems: VocabularyItem[] = builtInCollections.flatMap((collection) =>
   collection.items.map(({ slug, ...item }, position) => ({
     ...item,
+    explanation: "",
+    etymology: "",
+    history: "",
+    synonyms: "",
     id: `${collection.id}/${slug}`,
     collectionId: collection.id,
     position,
