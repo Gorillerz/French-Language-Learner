@@ -2,7 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useConnection } from "../connection";
 import { getAiKey } from "./client";
 
-export type AiBlocker = { isBlocked: boolean; explanation: string | null };
+export type AiBlocker = { isBlocked: boolean; reason: string | null };
 
 /**
  * Whether AI actions can run now and, when they cannot, what to tell the Learner.
@@ -12,15 +12,15 @@ export function useAiBlocker(): AiBlocker {
   const key = useLiveQuery(getAiKey);
   const connection = useConnection();
 
-  if (key === undefined) return { isBlocked: true, explanation: null };
+  if (key === undefined) return { isBlocked: true, reason: null };
   if (!key) {
     return {
       isBlocked: true,
-      explanation: "To use AI help, add your OpenRouter API key in the AI area.",
+      reason: "To use AI help, add your OpenRouter API key in the AI area.",
     };
   }
   if (connection === "offline") {
-    return { isBlocked: true, explanation: "You are offline. AI help needs an internet connection." };
+    return { isBlocked: true, reason: "You are offline. AI help needs an internet connection." };
   }
-  return { isBlocked: false, explanation: null };
+  return { isBlocked: false, reason: null };
 }

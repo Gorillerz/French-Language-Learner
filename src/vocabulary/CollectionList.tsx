@@ -12,7 +12,7 @@ export function CollectionList({ onOpen }: { onOpen: (collectionId: string) => v
   }
 
   return (
-    <section className="vocabulary">
+    <section className="area-content">
       <h3>Collections</h3>
       <ul className="row-list" aria-label="Collections">
         {collections?.map((collection) => (

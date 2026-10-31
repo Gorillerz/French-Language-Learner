@@ -1,15 +1,8 @@
 import { useState } from "react";
 import type { RatingValue } from "../db";
+import { averageRating, ratingChoices, recordRating } from "../ratings";
 import type { GrammarConcept } from "./content";
 import { flashcardsFor, type Direction } from "./flashcards";
-import { averageRating, saveGrammarRating } from "./ratings";
-
-const ratingChoices: { value: RatingValue; label: string }[] = [
-  { value: 1, label: "1 Forgot it" },
-  { value: 2, label: "2" },
-  { value: 3, label: "3" },
-  { value: 4, label: "4 Effortless" },
-];
 
 type Props = {
   concept: GrammarConcept;
@@ -33,7 +26,7 @@ export function FlashcardPractice({ concept, direction, onClose }: Props) {
     setIsSaving(true);
     setSaveFailed(false);
     try {
-      await saveGrammarRating({ cardId: card.id, topicId: concept.id, rating, sessionId });
+      await recordRating({ kind: "grammar", cardId: card.id, topicId: concept.id, rating, sessionId });
       setSessionRatings((ratings) => [...ratings, rating]);
       setIsRevealed(false);
     } catch {
@@ -68,15 +61,15 @@ export function FlashcardPractice({ concept, direction, onClose }: Props) {
                 {card.answer}
               </p>
               <div className="rating-buttons">
-                {ratingChoices.map((choice) => (
+                {ratingChoices.map(({ rating, label }) => (
                   <button
-                    key={choice.value}
+                    key={rating}
                     type="button"
                     className="action-button"
                     disabled={isSaving}
-                    onClick={() => rate(choice.value)}
+                    onClick={() => rate(rating)}
                   >
-                    {choice.label}
+                    {label}
                   </button>
                 ))}
               </div>

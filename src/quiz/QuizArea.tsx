@@ -5,8 +5,8 @@ import { GenerateQuestions } from "./GenerateQuestions";
 import { QuizReview } from "./QuizReview";
 import { QuizSession } from "./QuizSession";
 import {
+  buildFocusedQuiz,
   buildGeneralQuiz,
-  buildTopicQuiz,
   useRecentQuizzes,
   type QuizQuestion,
   type QuizTopic,
@@ -38,8 +38,8 @@ export function QuizArea() {
   const topics = [...collectionTopics, ...grammarTopics];
   const topicName = (topicId: string) => topics.find(({ id }) => id === topicId)?.name ?? "";
 
-  async function startTopic(topic: QuizTopic) {
-    const questions = await buildTopicQuiz(topic.id);
+  async function startFocused(topic: QuizTopic) {
+    const questions = await buildFocusedQuiz(topic.id);
     setView(
       questions.length > 0
         ? { name: "quiz", questions }
@@ -59,12 +59,12 @@ export function QuizArea() {
       return <QuizSession questions={view.questions} topicName={topicName} onBack={backToStart} />;
     case "generate":
       return (
-        <section className="vocabulary">
+        <section className="area-content">
           <h3>{view.topic.name}</h3>
           <GenerateQuestions
             topic={view.topic}
             isEmpty={view.isEmpty}
-            onStartQuiz={() => void startTopic(view.topic)}
+            onStartQuiz={() => void startFocused(view.topic)}
           />
           <button type="button" className="link-button" onClick={backToStart}>
             Back to quizzes
@@ -75,7 +75,7 @@ export function QuizArea() {
       return <QuizReview sessionId={view.sessionId} backLabel="Back to quizzes" onBack={backToStart} />;
     case "start":
       return (
-        <section className="vocabulary">
+        <section className="area-content">
           <p className="muted">A general quiz mixes vocabulary and grammar, starting with what needs review.</p>
           <button type="button" className="primary-button" onClick={() => void startGeneral()}>
             Start general quiz
@@ -83,13 +83,13 @@ export function QuizArea() {
           <TopicList
             title="Vocabulary collections"
             topics={collectionTopics}
-            onStart={startTopic}
+            onStart={startFocused}
             onGenerate={generate}
           />
           <TopicList
             title="Grammar concepts"
             topics={grammarTopics}
-            onStart={startTopic}
+            onStart={startFocused}
             onGenerate={generate}
           />
           {recentQuizzes && recentQuizzes.length > 0 && (

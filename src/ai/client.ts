@@ -89,6 +89,17 @@ async function readReply(response: Response) {
   return content;
 }
 
+/** Reads a reply that should be JSON. `malformed` is what the Learner is told if it isn't. */
+export function parseJson(text: string, malformed: string): unknown {
+  // Models often fence JSON even when told not to.
+  const unfenced = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+  try {
+    return JSON.parse(unfenced);
+  } catch {
+    throw new AiError(malformed);
+  }
+}
+
 /** Returns the model's text. Fails with an `AiError`, or an abort if `signal` fires. */
 export async function sendAiRequest({ model, messages }: PreparedAiRequest, signal?: AbortSignal) {
   if (!aiTarget.available) throw new AiError("This build has no safe AI service to talk to.");

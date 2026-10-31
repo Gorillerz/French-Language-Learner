@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TopicHelp } from "../ai/TopicHelp";
+import { FollowUpQuestion } from "../ai/FollowUpQuestion";
 import type { QuizAttempt } from "../db";
 import type { PracticeQuestion } from "./content";
 import { formats } from "./formats";
@@ -16,7 +16,7 @@ export function QuizReview({ sessionId, backLabel, onBack }: Props) {
   const reviewed = useQuizReview(sessionId);
 
   return (
-    <section className="vocabulary" aria-label="Quiz review">
+    <section className="area-content" aria-label="Quiz review">
       <h3>Quiz review</h3>
       {reviewed && (
         <ol className="row-list">
@@ -78,11 +78,7 @@ function ReviewedQuestion({ attempt, question }: QuestionProps) {
       </ul>
       {chosen === null && <p className="muted">Your answer to this question was not recorded.</p>}
       {isAsking ? (
-        <TopicHelp
-          action="ask-about-quiz-question"
-          title="Ask about this question"
-          topic={followUpContext(question, chosen)}
-        />
+        <FollowUpQuestion quizQuestion={followUpContext(question, chosen)} />
       ) : (
         <button type="button" className="link-button" onClick={() => setIsAsking(true)}>
           Ask AI about this question

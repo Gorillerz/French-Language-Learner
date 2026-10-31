@@ -22,7 +22,8 @@ export type PracticeQuestion = {
   explanations?: Record<string, string>;
 };
 
-export type CuratedQuestion = Pick<PracticeQuestion, "format" | "prompt" | "answer" | "distractors"> & {
+/** A curated question as written in the content files. It becomes a `PracticeQuestion`. */
+export type CuratedQuestionSource = Pick<PracticeQuestion, "format" | "prompt" | "answer" | "distractors"> & {
   /** Forms the question id, so it must never change. */
   slug: string;
 };
@@ -30,5 +31,5 @@ export type CuratedQuestion = Pick<PracticeQuestion, "format" | "prompt" | "answ
 export type CuratedTopic = {
   topicId: string;
   kind: PracticeQuestion["kind"];
-  questions: CuratedQuestion[];
+  questions: CuratedQuestionSource[];
 };

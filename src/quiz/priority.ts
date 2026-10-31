@@ -1,3 +1,5 @@
+import { groupBy } from "../groupBy";
+
 /**
  * Review priority: a relative ordering, never a schedule. A question has no due
  * date and is never finished; scores only say which question to ask first.
@@ -34,16 +36,6 @@ const TIME_HALF_POINT_DAYS = 7;
 const DAY_MS = 86_400_000;
 
 const byTime = (a: string, b: string) => Date.parse(a) - Date.parse(b);
-
-function groupBy<T>(rows: T[], keyOf: (row: T) => string) {
-  const groups = new Map<string, T[]>();
-  for (const row of rows) {
-    const group = groups.get(keyOf(row));
-    if (group) group.push(row);
-    else groups.set(keyOf(row), [row]);
-  }
-  return groups;
-}
 
 /** Above zero for a topic rated low, below zero for one rated high. */
 function ratingSignal(ratings: ReviewEvidence["ratings"]) {

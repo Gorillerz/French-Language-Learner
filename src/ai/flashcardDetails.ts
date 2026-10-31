@@ -1,5 +1,5 @@
 import type { VocabularyItem } from "../db";
-import { AiError, prepareAiRequest } from "./client";
+import { AiError, parseJson, prepareAiRequest } from "./client";
 
 /** The details AI may write. */
 export const generatableDetails = [
@@ -45,19 +45,9 @@ export function prepareDetailsRequest(item: VocabularyItem, fields: GeneratableD
 
 const MALFORMED = "The AI's reply was not in the expected form, so nothing was saved. Try again.";
 
-export function parseJson(text: string, malformed = MALFORMED): unknown {
-  // Models often fence JSON even when told not to.
-  const unfenced = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
-  try {
-    return JSON.parse(unfenced);
-  } catch {
-    throw new AiError(malformed);
-  }
-}
-
 /** Keeps only the requested fields. Anything else the model adds is ignored. */
 export function parseDetailsReply(text: string, fields: GeneratableDetail[]): GeneratedDetails {
-  const reply = parseJson(text);
+  const reply = parseJson(text, MALFORMED);
   if (typeof reply !== "object" || reply === null) throw new AiError(MALFORMED);
 
   const details: GeneratedDetails = {};

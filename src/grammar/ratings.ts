@@ -1,18 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, type FlashcardRating, type RatingValue } from "../db";
-
-type NewRating = Pick<FlashcardRating, "cardId" | "topicId" | "rating" | "sessionId">;
-
-export async function saveGrammarRating(rating: NewRating) {
-  const now = new Date().toISOString();
-  await db.flashcardRatings.add({
-    ...rating,
-    id: crypto.randomUUID(),
-    kind: "grammar",
-    ratedAt: now,
-    savedAt: now,
-  });
-}
+import { db, type RatingValue } from "../db";
 
 export function useConceptRatings(conceptId: string): RatingValue[] | undefined {
   return useLiveQuery(async () => {
@@ -23,9 +10,4 @@ export function useConceptRatings(conceptId: string): RatingValue[] | undefined 
       .toArray();
     return rows.map((row) => row.rating);
   }, [conceptId]);
-}
-
-export function averageRating(ratings: RatingValue[]) {
-  const total = ratings.reduce<number>((sum, rating) => sum + rating, 0);
-  return (total / ratings.length).toFixed(1);
 }

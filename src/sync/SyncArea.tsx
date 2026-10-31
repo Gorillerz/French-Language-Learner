@@ -22,7 +22,7 @@ import {
   signInAgain,
   signInOnThisDevice,
   type NewBundle,
-  type Session,
+  type SignedInAccount,
 } from "./setup";
 
 export function SyncArea() {
@@ -30,7 +30,7 @@ export function SyncArea() {
 
   if (!cloudTarget.available) {
     return (
-      <div className="vocabulary">
+      <div className="area-content">
         <p className="muted">
           {cloudTarget.reason === "insecure"
             ? "Sync is switched off because this version of the app is set up with a cloud address that is not secure. Your learning data stays on this device."
@@ -105,7 +105,7 @@ function StepForm({
   }
 
   return (
-    <form className="vocabulary stack-form" onSubmit={submit}>
+    <form className="area-content stack-form" onSubmit={submit}>
       <h3>{title}</h3>
       {children}
       {error && (
@@ -141,10 +141,10 @@ function SecretField(props: {
 
 type Step =
   | { name: "sign-in" }
-  | { name: "new-passphrase"; session: Session }
-  | { name: "save-code"; session: Session; prepared: NewBundle }
-  | { name: "unlock"; session: Session; stored: StoredKeyBundle }
-  | { name: "recover"; session: Session; stored: StoredKeyBundle };
+  | { name: "new-passphrase"; account: SignedInAccount }
+  | { name: "save-code"; account: SignedInAccount; prepared: NewBundle }
+  | { name: "unlock"; account: SignedInAccount; stored: StoredKeyBundle }
+  | { name: "recover"; account: SignedInAccount; stored: StoredKeyBundle };
 
 function SetupFlow() {
   const [step, setStep] = useState<Step>({ name: "sign-in" });
@@ -153,12 +153,12 @@ function SetupFlow() {
     case "sign-in":
       return (
         <SignInStep
-          onSignedIn={async (session) => {
-            const stored = await findKeyBundle(session);
+          onSignedIn={async (account) => {
+            const stored = await findKeyBundle(account);
             setStep(
               stored
-                ? { name: "unlock", session, stored }
-                : { name: "new-passphrase", session },
+                ? { name: "unlock", account, stored }
+                : { name: "new-passphrase", account },
             );
           }}
         />
@@ -166,16 +166,16 @@ function SetupFlow() {
     case "new-passphrase":
       return (
         <NewPassphraseStep
-          session={step.session}
+          account={step.account}
           onPrepared={(prepared) => setStep({ ...step, name: "save-code", prepared })}
         />
       );
     case "save-code":
-      return <SaveCodeStep session={step.session} prepared={step.prepared} />;
+      return <SaveCodeStep account={step.account} prepared={step.prepared} />;
     case "unlock":
       return (
         <UnlockStep
-          session={step.session}
+          account={step.account}
           stored={step.stored}
           onForgot={() => setStep({ ...step, name: "recover" })}
         />
@@ -183,7 +183,7 @@ function SetupFlow() {
     case "recover":
       return (
         <RecoverStep
-          session={step.session}
+          account={step.account}
           stored={step.stored}
           onBack={() => setStep({ ...step, name: "unlock" })}
         />
@@ -191,7 +191,7 @@ function SetupFlow() {
   }
 }
 
-function SignInStep({ onSignedIn }: { onSignedIn: (session: Session) => Promise<void> }) {
+function SignInStep({ onSignedIn }: { onSignedIn: (account: SignedInAccount) => Promise<void> }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { error, isBusy, run } = useStep();
@@ -240,10 +240,10 @@ function SignInStep({ onSignedIn }: { onSignedIn: (session: Session) => Promise<
 }
 
 function NewPassphraseStep({
-  session,
+  account,
   onPrepared,
 }: {
-  session: Session;
+  account: SignedInAccount;
   onPrepared: (prepared: NewBundle) => void;
 }) {
   const [passphrase, setPassphrase] = useState("");
@@ -251,7 +251,7 @@ function NewPassphraseStep({
   const { error, setError, isBusy, run } = useStep();
 
   function submit() {
-    const problem = passphraseProblem(passphrase, repeated, session);
+    const problem = passphraseProblem(passphrase, repeated, account);
     if (problem) setError(problem);
     else void run(async () => onPrepared(await prepareFirstDevice(passphrase)));
   }
@@ -288,7 +288,7 @@ function NewPassphraseStep({
   );
 }
 
-function SaveCodeStep({ session, prepared }: { session: Session; prepared: NewBundle }) {
+function SaveCodeStep({ account, prepared }: { account: SignedInAccount; prepared: NewBundle }) {
   const [hasSaved, setHasSaved] = useState(false);
   const { error, isBusy, run } = useStep();
 
@@ -296,7 +296,7 @@ function SaveCodeStep({ session, prepared }: { session: Session; prepared: NewBu
     <StepForm
       title="Save your recovery code"
       error={error}
-      onSubmit={() => void run(() => finishFirstDevice(session, prepared))}
+      onSubmit={() => void run(() => finishFirstDevice(account, prepared))}
     >
       <p className="muted">
         This code is the only way to set a new passphrase if you forget this one. Save it now
@@ -326,11 +326,11 @@ function SaveCodeStep({ session, prepared }: { session: Session; prepared: NewBu
 }
 
 function UnlockStep({
-  session,
+  account,
   stored,
   onForgot,
 }: {
-  session: Session;
+  account: SignedInAccount;
   stored: StoredKeyBundle;
   onForgot: () => void;
 }) {
@@ -340,7 +340,7 @@ function UnlockStep({
   function submit() {
     void run(async () => {
       try {
-        await joinWithPassphrase(session, stored, passphrase);
+        await joinWithPassphrase(account, stored, passphrase);
       } catch (failure) {
         if (!(failure instanceof UnlockFailedError)) throw failure;
         setError("That passphrase did not unlock your data. Check it and try again.");
@@ -373,12 +373,12 @@ function UnlockStep({
 }
 
 function RecoverStep({
-  session,
+  account,
   stored,
   onBack,
   onRecovered,
 }: {
-  session: Session;
+  account: SignedInAccount;
   stored: StoredKeyBundle;
   onBack: () => void;
   /** Setup leaves this step by itself once the device is enrolled. */
@@ -390,14 +390,14 @@ function RecoverStep({
   const { error, setError, isBusy, run } = useStep();
 
   function submit() {
-    const problem = passphraseProblem(passphrase, repeated, session);
+    const problem = passphraseProblem(passphrase, repeated, account);
     if (problem) {
       setError(problem);
       return;
     }
     void run(async () => {
       try {
-        await recoverWithCode(session, stored, code, passphrase);
+        await recoverWithCode(account, stored, code, passphrase);
         onRecovered?.();
       } catch (failure) {
         if (!(failure instanceof UnlockFailedError)) throw failure;
@@ -468,7 +468,7 @@ function SyncedDevice() {
   }
 
   return (
-    <div className="vocabulary">
+    <div className="area-content">
       {status === "sign-in-required" ? (
         <SignInAgain />
       ) : (
@@ -518,15 +518,15 @@ function RecoverThisDevice({
   onBack: () => void;
   onRecovered: () => void;
 }) {
-  const [found, setFound] = useState<{ session: Session; stored: StoredKeyBundle } | null>(null);
+  const [found, setFound] = useState<{ account: SignedInAccount; stored: StoredKeyBundle } | null>(null);
   const [password, setPassword] = useState("");
   const { error, setError, isBusy, run } = useStep();
 
   function submit() {
     void run(async () => {
-      const session = await signInOnThisDevice(password);
-      const stored = await findKeyBundle(session);
-      if (stored) setFound({ session, stored });
+      const account = await signInOnThisDevice(password);
+      const stored = await findKeyBundle(account);
+      if (stored) setFound({ account, stored });
       else setError("The cloud holds no key bundle for this account, so a code cannot open it.");
     });
   }

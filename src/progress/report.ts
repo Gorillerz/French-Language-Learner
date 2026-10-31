@@ -1,6 +1,7 @@
 import type { Collection, FlashcardRating, QuizAttempt, RatingValue } from "../db";
 import { grammarConcepts } from "../grammar/content";
-import { averageRating } from "../grammar/ratings";
+import { groupBy } from "../groupBy";
+import { averageRating } from "../ratings";
 
 export type ProgressActivity = {
   attempts: Pick<QuizAttempt, "topicId" | "isCorrect" | "sessionId" | "answeredAt">[];
@@ -41,17 +42,6 @@ export type SessionResult = {
 
 const grammarNames = new Map(grammarConcepts.map(({ id, title }) => [id, title]));
 const grammarOrder = grammarConcepts.map(({ id }) => id);
-
-function groupBy<Row>(rows: Row[], keyOf: (row: Row) => string) {
-  const groups = new Map<string, Row[]>();
-  for (const row of rows) {
-    const key = keyOf(row);
-    const group = groups.get(key);
-    if (group) group.push(row);
-    else groups.set(key, [row]);
-  }
-  return groups;
-}
 
 /** Groups rows by topic: known topics in `order`, then any this device can't name yet. */
 function byTopic<Row extends { topicId: string }>(rows: Row[], order: string[]) {

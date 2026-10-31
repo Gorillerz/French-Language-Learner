@@ -46,8 +46,8 @@ export async function buildGeneralQuiz() {
   return pickGeneralQuiz(ranked, GENERAL_QUIZ_LENGTH).map(asked);
 }
 
-/** Every question on the topic, weakest first. Empty if the topic has no questions yet. */
-export async function buildTopicQuiz(topicId: string) {
+/** Every question on the topic, highest review priority first. Empty if it has none yet. */
+export async function buildFocusedQuiz(topicId: string) {
   const questions = await loadQuestions();
   const ranked = await rankedQuestions(questions.filter((question) => question.topicId === topicId));
   return ranked.map(asked);

@@ -66,7 +66,7 @@ export function ItemForm({ title, initial = blank, onSave, onCancel }: Props) {
   }
 
   return (
-    <form className="vocabulary stack-form" onSubmit={submit}>
+    <form className="area-content stack-form" onSubmit={submit}>
       <h3>{title}</h3>
       {field("french", "French", true)}
       {field("english", "English", true)}

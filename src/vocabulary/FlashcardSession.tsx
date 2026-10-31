@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { RatingValue, VocabularyItem } from "../db";
-import { recordRating } from "./store";
+import { ratingChoices, recordRating } from "../ratings";
 
 type Props = {
   collectionId: string;
@@ -17,7 +17,7 @@ export function FlashcardSession({ collectionId, items, onBack }: Props) {
 
   if (ended || !item) {
     return (
-      <section className="vocabulary">
+      <section className="area-content">
         <p role="status">
           Session complete: {position} {position === 1 ? "card" : "cards"} rated
         </p>
@@ -29,7 +29,7 @@ export function FlashcardSession({ collectionId, items, onBack }: Props) {
   }
 
   return (
-    <section className="vocabulary">
+    <section className="area-content">
       <div className="session-bar">
         <p className="muted">
           Card {position + 1} of {items.length}
@@ -44,20 +44,19 @@ export function FlashcardSession({ collectionId, items, onBack }: Props) {
         onRate={async (rating) => {
           // Move on only once the rating is saved, so nothing shown as done can
           // be lost by closing the app straight afterwards.
-          await recordRating({ item, topicId: collectionId, rating, sessionId });
+          await recordRating({
+            kind: "vocabulary",
+            cardId: item.id,
+            topicId: collectionId,
+            rating,
+            sessionId,
+          });
           setPosition(position + 1);
         }}
       />
     </section>
   );
 }
-
-const ratings: { rating: RatingValue; label?: string }[] = [
-  { rating: 1, label: "Forgot it" },
-  { rating: 2 },
-  { rating: 3 },
-  { rating: 4, label: "Effortless" },
-];
 
 type FlashcardProps = {
   item: VocabularyItem;
@@ -113,7 +112,7 @@ function Flashcard({ item, onRate }: FlashcardProps) {
             </details>
           )}
           <div role="group" aria-label="Rate your recall" className="rating-buttons">
-            {ratings.map(({ rating, label }) => (
+            {ratingChoices.map(({ rating, label }) => (
               <button
                 key={rating}
                 type="button"
@@ -121,7 +120,7 @@ function Flashcard({ item, onRate }: FlashcardProps) {
                 disabled={saving}
                 onClick={() => void rate(rating)}
               >
-                {label ? `${rating} ${label}` : rating}
+                {label}
               </button>
             ))}
           </div>

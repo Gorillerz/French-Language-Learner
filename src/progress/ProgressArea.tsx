@@ -31,7 +31,7 @@ export function ProgressArea() {
   if (!activity || !report) return null;
   if (activity.attempts.length === 0 && activity.ratings.length === 0) {
     return (
-      <section className="vocabulary">
+      <section className="area-content">
         <p>No study recorded yet.</p>
       </section>
     );
@@ -43,7 +43,7 @@ export function ProgressArea() {
   const hasFlashcards = flashcards.collections.length + flashcards.grammar.length > 0;
 
   return (
-    <section className="vocabulary">
+    <section className="area-content">
       <div className="date-range">
         <label>
           From

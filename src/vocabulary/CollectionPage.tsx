@@ -23,7 +23,7 @@ export function CollectionPage({
   const lastRatings = useLastRatings(collectionId);
 
   return (
-    <section className="vocabulary">
+    <section className="area-content">
       <button type="button" className="link-button" onClick={onBack}>
         Back to collections
       </button>
