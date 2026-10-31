@@ -10,7 +10,7 @@ test("the Learner opens the app online", async ({ page }) => {
 test("the shell fits the screen and the Learner can reach each area", async ({ page }) => {
   await page.goto("/");
 
-  for (const area of ["Grammar", "Progress", "Vocabulary"]) {
+  for (const area of ["Grammar", "Quiz", "Progress", "Vocabulary"]) {
     await page.getByRole("button", { name: area }).click();
     await expect(page.getByRole("heading", { name: area })).toBeVisible();
   }

@@ -39,16 +39,35 @@ export type FlashcardRating = {
   savedAt: string;
 };
 
+/** One answered quiz question. Every attempt is kept, so a question can have many rows. */
+export type QuizAttempt = {
+  id: string;
+  questionId: string;
+  /** The collection or grammar concept id. */
+  topicId: string;
+  isCorrect: boolean;
+  sessionId: string;
+  /** ISO 8601. */
+  answeredAt: string;
+  /** ISO 8601. */
+  savedAt: string;
+};
+
 export const db = new Dexie("french-learning") as Dexie & {
   collections: EntityTable<Collection, "id">;
   vocabularyItems: EntityTable<VocabularyItem, "id">;
   flashcardRatings: EntityTable<FlashcardRating, "id">;
+  quizAttempts: EntityTable<QuizAttempt, "id">;
 };
 
 db.version(1).stores({
   collections: "id, position",
   vocabularyItems: "id, collectionId",
   flashcardRatings: "id, kind, cardId, topicId, sessionId, ratedAt, savedAt",
+});
+
+db.version(2).stores({
+  quizAttempts: "id, questionId, topicId, sessionId, answeredAt, savedAt",
 });
 
 db.on("populate", async (tx) => {
