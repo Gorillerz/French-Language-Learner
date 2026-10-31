@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useIsOnline } from "./connection";
 import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
+import { ProgressArea } from "./progress/ProgressArea";
 import { QuizArea } from "./quiz/QuizArea";
 import { VocabularyArea } from "./vocabulary/VocabularyArea";
 
@@ -47,6 +48,7 @@ export function App() {
         {area === "Vocabulary" && <VocabularyArea />}
         {area === "Grammar" && <GrammarArea />}
         {area === "Quiz" && <QuizArea />}
+        {area === "Progress" && <ProgressArea />}
       </main>
     </div>
   );
