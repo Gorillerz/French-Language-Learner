@@ -34,7 +34,7 @@ export function QuizSession({ questions, topicName, onBack }: Props) {
   if (ended || !question) {
     const answeredCount = position + (picked === null ? 0 : 1);
     return (
-      <section className="vocabulary">
+      <section className="area-content">
         <p role="status">
           {answeredCount === 0
             ? "No questions answered"
@@ -85,7 +85,7 @@ export function QuizSession({ questions, topicName, onBack }: Props) {
   }
 
   return (
-    <section className="vocabulary">
+    <section className="area-content">
       <article className="flashcard" role="region" aria-label="Quiz question">
         <div className="session-bar">
           <p className="muted">

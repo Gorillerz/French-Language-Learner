@@ -7,6 +7,7 @@ import {
   type LearnerAction,
   type PreparedAiRequest,
 } from "./client";
+import { BATCH_SIZE } from "./questionBatch";
 import { useAiBlocker } from "./useAiBlocker";
 
 type Props = {
@@ -22,7 +23,7 @@ const actionSummaries: Record<LearnerAction, string> = {
   "fill-flashcard-details": "Fill the blank details of this flashcard.",
   "ask-about-flashcard": "Ask a question about this flashcard.",
   "ask-about-grammar-concept": "Ask a question about this grammar concept.",
-  "generate-quiz-questions": "Write 10 new quiz questions for this topic.",
+  "generate-quiz-questions": `Write ${BATCH_SIZE} new quiz questions for this topic.`,
   "ask-about-quiz-question": "Ask a question about this quiz question.",
 };
 
@@ -36,7 +37,7 @@ const roleLabels: Record<AiMessage["role"], string> = {
 export function AiRequestReview({ request, onReply, onCancel, note }: Props) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isBlocked, explanation } = useAiBlocker();
+  const { isBlocked, reason } = useAiBlocker();
   const inFlight = useRef<AbortController | null>(null);
 
   // Leaving drops the request, so a late reply cannot land behind the Learner's back.
@@ -71,7 +72,7 @@ export function AiRequestReview({ request, onReply, onCancel, note }: Props) {
           <pre>{message.content}</pre>
         </div>
       ))}
-      {explanation && <p className="muted">{explanation}</p>}
+      {reason && <p className="muted">{reason}</p>}
       {error && (
         <p role="alert" className="form-error">
           {error}

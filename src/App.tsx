@@ -23,6 +23,7 @@ const syncLabels: Partial<Record<SyncStatus, string>> = {
   syncing: "Sync: syncing",
   "up-to-date": "Sync: up to date",
   waiting: "Sync: waiting for connection",
+  refused: "Sync: failed",
   "sign-in-required": "Sync: sign in again",
 };
 

@@ -92,6 +92,32 @@ test("the Learner edits a built-in item and adds to a built-in collection", asyn
   await expect(items.last()).toContainText("on verra");
 });
 
+test("a rating that cannot be saved says so, and can be tried again", async ({ page }) => {
+  await page.goto("/");
+  await openCollection(page, "100 most common French words");
+  await page.getByRole("button", { name: "Study flashcards" }).click();
+  await page.evaluate(() => {
+    const add = IDBObjectStore.prototype.add;
+    (window as unknown as { restoreAdd: () => void }).restoreAdd = () => {
+      IDBObjectStore.prototype.add = add;
+    };
+    IDBObjectStore.prototype.add = () => {
+      throw new DOMException("No room", "QuotaExceededError");
+    };
+  });
+
+  await rateCard(page, "1 Forgot it");
+
+  await expect(page.getByRole("alert")).toHaveText("That rating couldn't be saved. Please try again.");
+  await expect(page.getByText("Card 1 of 100")).toBeVisible();
+
+  await page.evaluate(() => (window as unknown as { restoreAdd: () => void }).restoreAdd());
+  await page.getByRole("button", { name: "1 Forgot it", exact: true }).click();
+
+  await expect(page.getByText("Card 2 of 100")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
 test("a flashcard shows French, then English, with expandable details", async ({ page }) => {
   await page.goto("/");
   await openCollection(page, "100 most common French words");

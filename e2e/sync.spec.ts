@@ -74,7 +74,7 @@ test.describe("setup", () => {
 
     await expect(page.getByLabel("Your recovery code")).toHaveText(/^(\w{4}-){7}\w{4}$/);
     await expect(page.getByText("somewhere you control")).toBeVisible();
-    await expect(page.getByText("If you lose every device and your recovery code")).toBeVisible();
+    await expect(page.getByText("If you forget your passphrase and also lose your recovery code and every device")).toBeVisible();
     await expect(page.getByText("Resetting your sign-in cannot restore")).toBeVisible();
     await expect(page.getByRole("button", { name: "Finish setup" })).toBeDisabled();
 
@@ -82,7 +82,7 @@ test.describe("setup", () => {
     await page.getByRole("button", { name: "Finish setup" }).click();
 
     await expect(syncStatus(page)).toHaveText("Sync: up to date");
-    await expect(page.getByText("If you lose every device and your recovery code")).toBeVisible();
+    await expect(page.getByText("If you forget your passphrase and also lose your recovery code and every device")).toBeVisible();
   });
 
   test("a short passphrase is refused and the app asks for a unique one", async ({ page, cloud }) => {
@@ -97,11 +97,38 @@ test.describe("setup", () => {
     expect(cloud.storedKeyBundles()).toEqual([]);
   });
 
+  test("a passphrase that only repeats a short pattern is refused, and the rule is explained", async ({ page, cloud }) => {
+    await signIn(page, "Create account");
+    await expect(page.getByText("not just one short pattern repeated")).toBeVisible();
+
+    for (const weak of ["aaaaaaaaaaaaaaaaaaaa", "abcabcabcabcabcabc", "le chat le chat le chat"]) {
+      await page.getByLabel("Passphrase", { exact: true }).fill(weak);
+      await page.getByLabel("Repeat passphrase").fill(weak);
+      await page.getByRole("button", { name: "Set passphrase" }).click();
+
+      await expect(page.getByRole("alert")).toContainText("short pattern");
+    }
+    expect(cloud.storedKeyBundles()).toEqual([]);
+    await expect(page.getByLabel("Your recovery code")).toHaveCount(0);
+  });
+
   test("the sign-in password cannot double as the passphrase", async ({ page }) => {
     await signIn(page, "Create account");
 
     await page.getByLabel("Passphrase", { exact: true }).fill(signInPassword);
     await page.getByLabel("Repeat passphrase").fill(signInPassword);
+    await page.getByRole("button", { name: "Set passphrase" }).click();
+
+    await expect(page.getByRole("alert")).toContainText("different from your sign-in password");
+  });
+
+  test("the sign-in password cannot slip through in another Unicode form", async ({ page }) => {
+    await signIn(page, "Create account");
+    // Full-width letters, which key derivation folds to their plain forms.
+    const disguised = signInPassword.replace("ordinary", "ｏｒｄｉｎａｒｙ");
+
+    await page.getByLabel("Passphrase", { exact: true }).fill(disguised);
+    await page.getByLabel("Repeat passphrase").fill(disguised);
     await page.getByRole("button", { name: "Set passphrase" }).click();
 
     await expect(page.getByRole("alert")).toContainText("different from your sign-in password");
@@ -298,6 +325,41 @@ test.describe("offline and reconnection", () => {
     await expect(page.getByRole("status", { name: "Network notice" })).toHaveText(/Connection restored/);
   });
 
+  test("a request the cloud refuses is a sync failure, not a lost connection", async ({ page, cloud }) => {
+    await setUpFirstDevice(page);
+    await page.route(`${cloud.url}/push`, (route) =>
+      route.fulfill({
+        status: 403,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        json: {},
+      }),
+    );
+
+    await createCollection(page, "Refusée");
+
+    await expect(syncStatus(page)).toHaveText("Sync: failed");
+    await expect(page.getByRole("status", { name: "Connection", exact: true })).toHaveText("Online");
+    await expect(page.getByRole("status", { name: "Network notice" })).toHaveCount(0);
+    await openSync(page);
+    await expect(page.getByRole("alert")).toContainText("refused");
+
+    await page.unroute(`${cloud.url}/push`);
+    await expect(syncStatus(page)).toHaveText("Sync: up to date");
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
+
+  test("setup does not blame the connection for a refused request", async ({ page, cloud }) => {
+    cloud.respond("POST", "/sign-in", { status: 400, json: {} });
+
+    await openSync(page);
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Sign-in password").fill(signInPassword);
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page.getByRole("alert")).toContainText("refused");
+    await expect(page.getByRole("alert")).not.toContainText("cannot be reached");
+  });
+
   test("an expired sign-in pauses sync without touching study or keys", async ({ page, cloud, newDevice }) => {
     await setUpFirstDevice(page);
     const other = await newDevice();
@@ -407,11 +469,45 @@ test.describe("conflicts keep the most recent save", () => {
   });
 });
 
+test.describe("edits saved at the same instant", () => {
+  const instant = new Date("2031-01-01T09:00:00.000Z");
+  const winner = "zebra, the larger text";
+  const loser = "aardvark, the smaller text";
+
+  for (const firstBack of ["loser", "winner"] as const) {
+    test(`every device settles on one winner when the ${firstBack} reconnects first`, async ({ page, context, newDevice }) => {
+      const other = await newDevice();
+      await setUpFirstDevice(page);
+      await joinDevice(other);
+      await editExpression(page, "before the conflict");
+      await expectExpression(other, "before the conflict");
+      await context.setOffline(true);
+      await other.context().setOffline(true);
+      await page.clock.setFixedTime(instant);
+      await other.clock.setFixedTime(instant);
+
+      await editExpression(page, loser);
+      await editExpression(other, winner);
+
+      const [first, second] = firstBack === "loser" ? [page, other] : [other, page];
+      await first.context().setOffline(false);
+      await expect(syncStatus(first)).toHaveText("Sync: up to date");
+      await second.context().setOffline(false);
+
+      await expectExpression(page, winner);
+      await expectExpression(other, winner);
+      const third = await newDevice();
+      await joinDevice(third);
+      await expectExpression(third, winner);
+    });
+  }
+});
+
 test.describe("recovery", () => {
   async function recover(page: Page, recoveryCode: string) {
     await signIn(page, "Sign in");
     await page.getByRole("button", { name: "I forgot my passphrase" }).click();
-    await expect(page.getByText("If you lose every device and your recovery code")).toBeVisible();
+    await expect(page.getByText("If you forget your passphrase and also lose your recovery code and every device")).toBeVisible();
     await page.getByLabel("Recovery code").fill(recoveryCode);
     await page.getByLabel("New passphrase", { exact: true }).fill(newPassphrase);
     await page.getByLabel("Repeat new passphrase").fill(newPassphrase);
@@ -458,6 +554,59 @@ test.describe("recovery", () => {
     await withOld.getByLabel("Repeat new passphrase").fill(`${newPassphrase} encore`);
     await withOld.getByRole("button", { name: "Set new passphrase" }).click();
     await expect(syncStatus(withOld)).toHaveText("Sync: up to date");
+  });
+
+  test("a device already set up can use the code, and nothing is lost", async ({ page, context, newDevice }) => {
+    const recoveryCode = await setUpFirstDevice(page);
+    await createCollection(page, "Déjà synchronisée");
+    const other = await newDevice();
+    await joinDevice(other);
+    await context.setOffline(true);
+    await createCollection(page, "Pas encore envoyée");
+    await context.setOffline(false);
+    await expect(syncStatus(page)).toHaveText("Sync: up to date");
+
+    await openSync(page);
+    await page.getByRole("button", { name: "I forgot my passphrase" }).click();
+    await page.getByLabel("Sign-in password").fill(signInPassword);
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByLabel("Recovery code").fill(recoveryCode);
+    await page.getByLabel("New passphrase", { exact: true }).fill(newPassphrase);
+    await page.getByLabel("Repeat new passphrase").fill(newPassphrase);
+    await page.getByRole("button", { name: "Set new passphrase" }).click();
+
+    await expect(page.getByRole("status", { name: "Recovery" })).toHaveText(/new passphrase is set/);
+    await expect(syncStatus(page)).toHaveText("Sync: up to date");
+    await openCollections(page);
+    await expect(page.getByRole("button", { name: "Open Déjà synchronisée" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open Pas encore envoyée" })).toBeVisible();
+
+    await createCollection(page, "Après coup");
+    await openCollections(other);
+    await expect(other.getByRole("button", { name: "Open Après coup" })).toBeVisible();
+
+    const withNew = await newDevice();
+    await joinDevice(withNew, newPassphrase);
+    await openCollections(withNew);
+    await expect(withNew.getByRole("button", { name: "Open Pas encore envoyée" })).toBeVisible();
+  });
+
+  test("a device already set up can back out of recovery and change nothing", async ({ page, cloud }) => {
+    await setUpFirstDevice(page);
+    const bundles = JSON.stringify(cloud.storedKeyBundles());
+
+    await openSync(page);
+    await page.getByRole("button", { name: "I forgot my passphrase" }).click();
+    await page.getByRole("button", { name: "Back" }).click();
+    await expect(page.getByText("This device is set up")).toBeVisible();
+
+    await page.getByRole("button", { name: "I forgot my passphrase" }).click();
+    await page.getByLabel("Sign-in password").fill(signInPassword);
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: "Back" }).click();
+
+    await expect(page.getByText("This device is set up")).toBeVisible();
+    expect(JSON.stringify(cloud.storedKeyBundles())).toBe(bundles);
   });
 
   test("a wrong recovery code fails cleanly", async ({ page, newDevice }) => {

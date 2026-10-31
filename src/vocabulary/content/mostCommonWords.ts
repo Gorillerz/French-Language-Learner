@@ -1,8 +1,8 @@
 import type { BuiltInCollection } from "./types";
 
 /**
- * The 100 most frequent French lemmas, in rank order, from the frequency ranking
- * in Lonsdale and Le Bras, "A Frequency Dictionary of French" (Routledge, 2009).
+ * The 100 most frequently used French words, in the order of the list published at
+ * https://strommeninc.com/100-most-frequently-used-french-words/.
  * Slugs are permanent: they form the item ids that ratings and sync refer to.
  */
 export const mostCommonWords: BuiltInCollection = {

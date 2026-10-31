@@ -1,4 +1,4 @@
-import { aiTarget } from "../serviceConfig";
+import { aiTarget, aiTimeoutMs } from "../serviceConfig";
 import { getSetting, setSetting } from "../settings";
 
 /**
@@ -89,6 +89,17 @@ async function readReply(response: Response) {
   return content;
 }
 
+/** Reads a reply that should be JSON. `malformed` is what the Learner is told if it isn't. */
+export function parseJson(text: string, malformed: string): unknown {
+  // Models often fence JSON even when told not to.
+  const unfenced = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+  try {
+    return JSON.parse(unfenced);
+  } catch {
+    throw new AiError(malformed);
+  }
+}
+
 /** Returns the model's text. Fails with an `AiError`, or an abort if `signal` fires. */
 export async function sendAiRequest({ model, messages }: PreparedAiRequest, signal?: AbortSignal) {
   if (!aiTarget.available) throw new AiError("This build has no safe AI service to talk to.");
@@ -96,18 +107,23 @@ export async function sendAiRequest({ model, messages }: PreparedAiRequest, sign
   const key = await getAiKey();
   if (!key) throw new AiError("Add your OpenRouter API key in the AI area first.");
 
-  let response: Response;
+  const timeout = AbortSignal.timeout(aiTimeoutMs);
   try {
-    response = await fetch(`${aiTarget.baseUrl}/chat/completions`, {
+    const response = await fetch(`${aiTarget.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({ model, messages }),
-      signal,
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      credentials: "omit",
+      // A redirect could carry the API key away from the HTTPS address that was checked.
+      redirect: "error",
     });
+    if (!response.ok) throw failureFor(response.status);
+    return await readReply(response);
   } catch (error) {
     if (signal?.aborted) throw error;
+    if (timeout.aborted) throw new AiError("The AI service took too long to answer. Try again.");
+    if (error instanceof AiError) throw error;
     throw new AiError("Could not reach the AI service. Check your connection and try again.");
   }
-  if (!response.ok) throw failureFor(response.status);
-  return readReply(response);
 }

@@ -33,7 +33,7 @@ export function ItemDetails({ itemId, onBack, onEdit }: Props) {
   if (!item) return null;
 
   return (
-    <section className="vocabulary">
+    <section className="area-content">
       <button type="button" className="link-button" onClick={onBack}>
         Back to collection
       </button>
@@ -69,7 +69,7 @@ export function ItemDetails({ itemId, onBack, onEdit }: Props) {
 type PendingFill = { request: PreparedAiRequest; fields: GeneratableDetail[] };
 
 function FillBlankDetails({ item }: { item: VocabularyItem }) {
-  const { isBlocked, explanation } = useAiBlocker();
+  const { isBlocked, reason } = useAiBlocker();
   const [pending, setPending] = useState<PendingFill | null>(null);
   const [result, setResult] = useState("");
   const fields = blankDetails(item);
@@ -113,7 +113,7 @@ function FillBlankDetails({ item }: { item: VocabularyItem }) {
       ) : (
         <p className="muted">This card has no blank details for AI to fill.</p>
       )}
-      {fields.length > 0 && explanation && <p className="muted">{explanation}</p>}
+      {fields.length > 0 && reason && <p className="muted">{reason}</p>}
       <p role="status" aria-label="AI result">
         {result}
       </p>

@@ -1,11 +1,11 @@
-export type CloudTarget =
+export type ServiceTarget =
   | { available: true; baseUrl: string }
   | { available: false; reason: "missing" | "insecure" };
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-/** Learning data and sign-in details only travel over HTTPS, or to this machine for tests. */
-export function checkCloudUrl(url: string | undefined): CloudTarget {
+/** Secrets only travel over HTTPS, or to this machine for tests. */
+function checkServiceUrl(url: string | undefined): ServiceTarget {
   if (!url) return { available: false, reason: "missing" };
   let parsed: URL;
   try {
@@ -20,9 +20,13 @@ export function checkCloudUrl(url: string | undefined): CloudTarget {
   return { available: true, baseUrl: url.replace(/\/+$/, "") };
 }
 
-/** OpenRouter unless the build says otherwise. The Learner's API key gets the same protection. */
-export function checkAiUrl(url: string | undefined): CloudTarget {
-  return checkCloudUrl(url || "https://openrouter.ai/api/v1");
+export function checkCloudUrl(url: string | undefined) {
+  return checkServiceUrl(url);
+}
+
+/** OpenRouter unless the build says otherwise. */
+export function checkAiUrl(url: string | undefined) {
+  return checkServiceUrl(url || "https://openrouter.ai/api/v1");
 }
 
 /**
@@ -35,3 +39,6 @@ export const aiTarget = checkAiUrl(import.meta.env.VITE_AI_BASE_URL);
 
 /** How often a set-up device asks the cloud for changes. Tests shorten it. */
 export const syncPollMs = Number(import.meta.env.VITE_SYNC_POLL_MS ?? 30_000);
+
+/** How long an AI request may take. Long enough for a batch of questions. Tests shorten it. */
+export const aiTimeoutMs = Number(import.meta.env.VITE_AI_TIMEOUT_MS ?? 90_000);

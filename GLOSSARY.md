@@ -10,8 +10,14 @@ The single person who uses the app to develop their French skills.
 **Collection**:
 A named grouping of French vocabulary items, including words and expressions, that the learner can use to focus practice. The learner can create collections and add or edit their vocabulary items and definitions.
 
+**Topic**:
+A collection or grammar concept: what questions, ratings and results are grouped by.
+
 **Flashcard**:
 A study item for a French word, expression, or idiom, paired with its English translation and supporting information.
+
+**Sentence flashcard**:
+A study item for one sentence of a grammar concept, asking for its translation in one direction and then for a self-rating. Each direction is rated separately.
 
 **Practice question**:
 A prompt that asks the learner to recall vocabulary or construct a French sentence.
@@ -50,7 +56,7 @@ A generated code, saved by the learner, that sets a new passphrase when the old 
 The ordinary account that identifies the learner to the sync service. Resetting it cannot restore encrypted data.
 
 **Topic help**:
-Questions the learner asks AI about one flashcard or grammar concept. The answers are not saved.
+Questions the learner asks AI about one flashcard or grammar concept, outside any quiz. The answers are not saved.
 
 **Follow-up question**:
 A question the learner asks AI about one quiz question during quiz review. The answers are not saved.

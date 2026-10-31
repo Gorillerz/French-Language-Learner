@@ -8,7 +8,7 @@ export type RecordedRequest = {
   body: unknown;
 };
 
-export type Reply = { status?: number; json?: unknown };
+export type Reply = { status?: number; json?: unknown; headers?: Record<string, string> };
 export type Responder = Reply | ((request: RecordedRequest) => Reply);
 
 /**
@@ -100,7 +100,7 @@ export class ServiceStandIn {
           });
 
     response
-      .writeHead(reply.status ?? 200, { "Content-Type": "application/json" })
+      .writeHead(reply.status ?? 200, { "Content-Type": "application/json", ...reply.headers })
       .end(JSON.stringify(reply.json ?? null));
   }
 }

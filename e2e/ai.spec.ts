@@ -22,6 +22,7 @@ const allDetails = {
   history: "In office use since the nineteenth century.",
   synonyms: "le rendez-vous, l'assemblée",
   example: "La réunion commence à neuf heures.",
+  pronunciation: "/ʁe.y.njɔ̃/",
 };
 
 async function openApp({ page }: { page: Page }) {
@@ -84,7 +85,7 @@ test.describe("filling blank flashcard details", () => {
     await sendButton(page).click();
 
     await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
-      "Filled 6 blank details.",
+      "Filled 7 blank details.",
     );
     for (const value of Object.values(allDetails)) {
       await expect(page.getByText(value, { exact: true })).toBeVisible();
@@ -139,7 +140,7 @@ test.describe("filling blank flashcard details", () => {
     await sendButton(page).click();
 
     await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
-      "Filled 5 blank details.",
+      "Filled 6 blank details.",
     );
     await expect(page.getByText("Ce que j'ai écrit moi-même.")).toBeVisible();
     await expect(page.getByText("Not what I wrote.")).toHaveCount(0);
@@ -180,7 +181,7 @@ test.describe("filling blank flashcard details", () => {
     releaseRequest();
 
     await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
-      "Filled 5 blank details.",
+      "Filled 6 blank details.",
     );
     await expect(page.getByText("Mon étymologie à moi.")).toBeVisible();
     await expect(page.getByText(allDetails.etymology)).toHaveCount(0);
@@ -216,7 +217,7 @@ test.describe("filling blank flashcard details", () => {
     await page.getByRole("button", { name: "Fill blank details" }).click();
     await sendButton(page).click();
     await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
-      "Filled 6 blank details.",
+      "Filled 7 blank details.",
     );
   });
 
@@ -377,7 +378,7 @@ test.describe("what is shared", () => {
     expect(ai.requests).toEqual([]);
   });
 
-  test("the API key goes only to the AI service and is never logged or shown", async ({ page, ai, cloud }) => {
+  test("the API key reaches only the AI service in the clear and is never logged or shown", async ({ page, ai, cloud }) => {
     ai.respond("POST", "/chat/completions", generated(allDetails));
     const logged: string[] = [];
     const elsewhere: string[] = [];
@@ -560,6 +561,49 @@ test.describe("when AI cannot run", () => {
   });
 });
 
+test.describe("reaching the AI service", () => {
+  test.beforeEach(openApp);
+
+  async function askAboutCard(page: Page) {
+    await saveKey(page);
+    await createCard(page, "Au bureau", "la réunion", "the meeting");
+    await openDetails(page, "la réunion");
+    await page.getByRole("button", { name: "Fill blank details" }).click();
+    await sendButton(page).click();
+  }
+
+  test("a redirect is refused, so the key cannot follow it elsewhere", async ({ page, ai }) => {
+    ai.respond("POST", "/chat/completions", {
+      status: 307,
+      headers: { Location: `${ai.url}/elsewhere` },
+    });
+    ai.respond("POST", "/elsewhere", generated(allDetails));
+
+    await askAboutCard(page);
+
+    await expect(page.getByRole("alert")).toContainText("Could not reach the AI service");
+    expect(ai.requests.map(({ path }) => path)).toEqual(["/chat/completions"]);
+  });
+
+  test("a service that never answers ends in a visible error", async ({ page, ai }) => {
+    await page.route(`${ai.url}/**`, () => {
+      // Never answered.
+    });
+
+    await askAboutCard(page);
+
+    await expect(page.getByRole("alert")).toContainText("took too long", { timeout: 15_000 });
+    await expect(sendButton(page)).toBeEnabled();
+  });
+
+  test("the AI area says the key also syncs, encrypted", async ({ page }) => {
+    await openArea(page, "AI");
+
+    await expect(page.getByText("end-to-end encrypted")).toBeVisible();
+    await expect(page.getByText("goes only to the AI service")).toHaveCount(0);
+  });
+});
+
 test("cards saved before these details existed can be opened, edited and filled", async ({ page, ai }) => {
   ai.respond("POST", "/chat/completions", generated(allDetails));
   await page.goto("/icon.svg");
@@ -614,7 +658,7 @@ test("cards saved before these details existed can be opened, edited and filled"
   await sendButton(page).click();
 
   await expect(page.getByRole("status", { name: "AI result" })).toHaveText(
-    "Filled 5 blank details.",
+    "Filled 6 blank details.",
   );
   await expect(page.getByText("Mine.")).toBeVisible();
   await expect(page.getByText(allDetails.etymology)).toBeVisible();

@@ -4,10 +4,10 @@ import {
   decryptRecord,
   encryptRecord,
   generateRecoveryCode,
+  isRepetitive,
   recordIdFor,
   replacePassphrase,
   unlockWithPassphrase,
-  unlockWithRecoveryCode,
   UnlockFailedError,
   UnreadableRecordError,
   WeakPassphraseError,
@@ -48,7 +48,29 @@ describe("passphrase rules", () => {
   });
 
   it("accepts a passphrase of exactly 15 characters", async () => {
-    await expect(createKeyBundle("a".repeat(15), generateRecoveryCode())).resolves.toBeDefined();
+    await expect(createKeyBundle("abcdefghijklmno", generateRecoveryCode())).resolves.toBeDefined();
+  });
+
+  it.each([
+    ["a single repeated character", "a".repeat(20)],
+    ["a short repeated pattern", "abcabcabcabcabc"],
+    ["a pattern that stops part way through", "abcdabcdabcdabcdab"],
+    ["repeated words", "mot de passe mot de passe "],
+    ["a repeated emoji", "😀".repeat(15)],
+    ["a repeat hidden in another Unicode form", "ａ".repeat(8) + "a".repeat(8)],
+  ])("refuses %s", async (_name, weak) => {
+    expect(isRepetitive(weak)).toBe(true);
+    await expect(createKeyBundle(weak, generateRecoveryCode())).rejects.toBeInstanceOf(
+      WeakPassphraseError,
+    );
+  });
+
+  it.each([
+    ["an ordinary sentence", "le chat dort sur le canapé bleu"],
+    ["a repeated start with a different end", "aaaaaaaaaaaaaaaaaaab"],
+    ["a long phrase said twice", "une phrase assez longue une phrase assez longue"],
+  ])("does not mind %s", (_name, passphrase) => {
+    expect(isRepetitive(passphrase)).toBe(false);
   });
 
   it("counts characters, not UTF-16 units", async () => {
@@ -104,19 +126,19 @@ describe("key bundle", () => {
     const blob = await encryptRecord(keys, "record", row);
 
     const typed = ` ${canonical(recoveryCode).toLowerCase().replaceAll("0", "o").replaceAll("1", "l")} `;
-    const recovered = await unlockWithRecoveryCode(bundle, typed);
+    const recovered = await replacePassphrase(bundle, typed, "une toute nouvelle phrase");
 
-    expect(await decryptRecord(recovered, "record", blob)).toEqual(row);
+    expect(await decryptRecord(recovered.keys, "record", blob)).toEqual(row);
   });
 
   it("fails cleanly on a wrong recovery code", async () => {
     const { bundle } = await setup();
-    await expect(unlockWithRecoveryCode(bundle, generateRecoveryCode())).rejects.toBeInstanceOf(
-      UnlockFailedError,
-    );
-    await expect(unlockWithRecoveryCode(bundle, "too short")).rejects.toBeInstanceOf(
-      UnlockFailedError,
-    );
+    await expect(
+      replacePassphrase(bundle, generateRecoveryCode(), "une toute nouvelle phrase"),
+    ).rejects.toBeInstanceOf(UnlockFailedError);
+    await expect(
+      replacePassphrase(bundle, "too short", "une toute nouvelle phrase"),
+    ).rejects.toBeInstanceOf(UnlockFailedError);
   });
 
   it("refuses a bundle whose work factor the server has lowered", async () => {
@@ -174,7 +196,9 @@ describe("recovery rewrap", () => {
     await expect(unlockWithPassphrase(rewrapped, passphrase)).rejects.toBeInstanceOf(
       UnlockFailedError,
     );
-    await expect(unlockWithRecoveryCode(rewrapped, recoveryCode)).resolves.toBeDefined();
+    await expect(
+      replacePassphrase(rewrapped, recoveryCode, "et encore une autre phrase"),
+    ).resolves.toBeDefined();
   });
 
   it("uses a fresh salt", async () => {

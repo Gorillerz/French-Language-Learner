@@ -58,6 +58,21 @@ export function isLongEnough(passphrase: string) {
   return [...normalizePassphrase(passphrase)].length >= MIN_PASSPHRASE_LENGTH;
 }
 
+/**
+ * True for what length alone lets through: one pattern, shorter than the minimum
+ * length, over and over. The repeats add nothing, so it is as weak as the pattern.
+ */
+export function isRepetitive(passphrase: string) {
+  const characters = [...normalizePassphrase(passphrase)];
+  const longestPattern = Math.min(MIN_PASSPHRASE_LENGTH - 1, Math.floor(characters.length / 2));
+  for (let size = 1; size <= longestPattern; size++) {
+    if (characters.slice(size).every((character, index) => character === characters[index])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function generateRecoveryCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(RECOVERY_CODE_BYTES));
   let bits = 0;
@@ -76,7 +91,7 @@ export function generateRecoveryCode() {
 }
 
 export async function createKeyBundle(passphrase: string, recoveryCode: string) {
-  requireLongEnough(passphrase);
+  requireStrongEnough(passphrase);
   const dataKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
     "encrypt",
     "decrypt",
@@ -95,11 +110,6 @@ export async function unlockWithPassphrase(bundle: KeyBundle, passphrase: string
   return keysFrom(bundle, await openSlot(bundle, "passphrase", passphrase, false));
 }
 
-export async function unlockWithRecoveryCode(bundle: KeyBundle, recoveryCode: string) {
-  const dataKey = await openSlot(bundle, "recovery", canonicalRecoveryCode(recoveryCode), false);
-  return keysFrom(bundle, dataKey);
-}
-
 /**
  * Rewraps the data key for a new passphrase, proving the right to do so with the
  * recovery code. The data key, the recovery wrap and every record stay as they are.
@@ -109,7 +119,7 @@ export async function replacePassphrase(
   recoveryCode: string,
   newPassphrase: string,
 ) {
-  requireLongEnough(newPassphrase);
+  requireStrongEnough(newPassphrase);
   const code = canonicalRecoveryCode(recoveryCode);
   const dataKey = await openSlot(bundle, "recovery", code, true);
   const rewrapped: KeyBundle = {
@@ -156,14 +166,17 @@ export async function decryptRecord(keys: SyncKeys, recordId: string, blob: stri
   }
 }
 
-function requireLongEnough(passphrase: string) {
+function requireStrongEnough(passphrase: string) {
   if (!isLongEnough(passphrase)) {
     throw new WeakPassphraseError(`A passphrase needs ${MIN_PASSPHRASE_LENGTH} or more characters`);
+  }
+  if (isRepetitive(passphrase)) {
+    throw new WeakPassphraseError("A passphrase cannot be one short pattern repeated");
   }
 }
 
 /** Accented letters arrive in different Unicode forms on different keyboards. */
-function normalizePassphrase(passphrase: string) {
+export function normalizePassphrase(passphrase: string) {
   return passphrase.normalize("NFKC");
 }
 

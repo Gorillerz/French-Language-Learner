@@ -1,7 +1,6 @@
 import type { GeneratedQuestion } from "../db";
 import type { QuestionFormat } from "../quiz/content";
-import { AiError, prepareAiRequest } from "./client";
-import { parseJson } from "./flashcardDetails";
+import { AiError, parseJson, prepareAiRequest } from "./client";
 
 export const BATCH_SIZE = 10;
 const DISTRACTOR_COUNT = 4;

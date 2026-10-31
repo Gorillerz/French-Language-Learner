@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { TopicHelp } from "../ai/TopicHelp";
 import type { RatingValue } from "../db";
+import { averageRating } from "../ratings";
 import { grammarConcepts, type GrammarConcept } from "./content";
 import { FlashcardPractice } from "./FlashcardPractice";
 import {
@@ -9,7 +10,7 @@ import {
   useDefaultDirection,
   type Direction,
 } from "./flashcards";
-import { averageRating, useConceptRatings } from "./ratings";
+import { useConceptRatings } from "./ratings";
 
 function describeRatings(ratings: RatingValue[]) {
   if (ratings.length === 0) return "No ratings yet";

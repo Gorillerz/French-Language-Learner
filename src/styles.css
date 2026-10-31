@@ -263,14 +263,14 @@ p {
   color: var(--color-primary);
 }
 
-.vocabulary {
+.area-content {
   display: grid;
   gap: 1rem;
   max-width: 44rem;
   margin-top: 1rem;
 }
 
-.vocabulary h3 {
+.area-content h3 {
   margin: 0;
   font-size: 1.25rem;
   overflow-wrap: anywhere;

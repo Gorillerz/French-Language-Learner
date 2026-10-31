@@ -10,6 +10,7 @@ The cloud is a store of opaque values for one account. It never sees a passphras
 - Bodies are JSON. Allow CORS from the app's origin for `GET`, `POST` and `PUT` with the `Authorization` and `Content-Type` headers.
 - Every route except `/sign-up` and `/sign-in` takes `Authorization: Bearer <token>` and answers `401` when the token is missing or no longer valid. The app then asks the Learner to sign in again; local study carries on.
 - A network failure, a timeout or any `5xx` means "cloud unreachable". The app reports the connection as lost and retries. Do not use `5xx` for a request the client should change.
+- Any other status this contract does not list means the cloud refused the request. The app shows sync as failed, not the connection as lost, and retries.
 
 ## Sign-in
 
@@ -47,7 +48,7 @@ Stored:   { id: string, blob: string, cursor: number }
 | `POST /push` | `{ records: Record[] }` | `200 { cursor }` |
 | `GET /pull?since=<cursor>&limit=<n>` | | `200 { records: Stored[], cursor, hasMore }` |
 
-**Push** replaces the stored record for each `id` and gives it a new `cursor`. The server keeps the latest push and must not try to choose between versions: it cannot read them. Conflicts resolve on the client, where the most recent decrypted `savedAt` wins; a client that holds a newer version than the one it pulled pushes its own again.
+**Push** replaces the stored record for each `id` and gives it a new `cursor`. The server keeps the latest push and must not try to choose between versions: it cannot read them. Conflicts resolve on the client, where the most recent decrypted `savedAt` wins; a client that holds a newer version than the one it pulled pushes its own again. Two versions with the same `savedAt` are ordered by their canonical JSON (keys sorted, compared by UTF-16 code unit) and the greater wins, so every client picks the same one, and a client holding that winner pushes it again too.
 
 **Pull** returns the current record of every `id` whose `cursor` is greater than `since`, in rising `cursor` order, at most `limit` of them. The reply's `cursor` is the last one returned, or `since` when there are none. `hasMore` is true when more remain. `since=0` returns everything.
 

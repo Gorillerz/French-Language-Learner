@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AiRequestReview } from "../ai/AiRequestReview";
 import { aiServiceName, type PreparedAiRequest } from "../ai/client";
+import { BATCH_SIZE } from "../ai/questionBatch";
 import { useAiBlocker } from "../ai/useAiBlocker";
 import { prepareBatch, saveGeneratedBatch, type QuizTopic } from "./store";
 
@@ -14,7 +15,7 @@ type Props = {
 type Pending = { request: PreparedAiRequest; note: string | undefined };
 
 export function GenerateQuestions({ topic, isEmpty, onStartQuiz }: Props) {
-  const { isBlocked, explanation } = useAiBlocker();
+  const { isBlocked, reason } = useAiBlocker();
   const [pending, setPending] = useState<Pending | null>(null);
   const [added, setAdded] = useState<number | null>(null);
 
@@ -49,17 +50,17 @@ export function GenerateQuestions({ topic, isEmpty, onStartQuiz }: Props) {
       ) : (
         <>
           <p className="muted">
-            AI can write 10 new multiple-choice questions on {topic.name}. You will see what is sent
-            to {aiServiceName()} first.
+            AI can write {BATCH_SIZE} new multiple-choice questions on {topic.name}. You will see
+            what is sent to {aiServiceName()} first.
           </p>
-          {explanation && <p className="muted">{explanation}</p>}
+          {reason && <p className="muted">{reason}</p>}
           <button
             type="button"
             className="action-button"
             disabled={isBlocked}
             onClick={() => void review()}
           >
-            Generate 10 questions
+            Generate {BATCH_SIZE} questions
           </button>
         </>
       )}

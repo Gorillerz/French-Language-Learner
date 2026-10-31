@@ -22,6 +22,7 @@ export type SyncStatus =
   | "syncing"
   | "up-to-date"
   | "waiting"
+  | "refused"
   | "sign-in-required";
 
 type SyncState = {
@@ -68,7 +69,8 @@ function schedule(delayMs: number) {
 function onLocalWrite() {
   if (isApplyingPulledRows) return;
   if (state.status === "up-to-date") setState({ status: "syncing" });
-  if (state.status === "syncing" || state.status === "waiting") schedule(WRITE_DEBOUNCE_MS);
+  const isTrying = ["syncing", "waiting", "refused"].includes(state.status);
+  if (isTrying) schedule(WRITE_DEBOUNCE_MS);
 }
 
 for (const name of syncedTables) {
@@ -77,9 +79,6 @@ for (const name of syncedTables) {
     transaction.on("complete", onLocalWrite);
   });
   table.hook("updating", (_changes, _key, _row, transaction) => {
-    transaction.on("complete", onLocalWrite);
-  });
-  table.hook("deleting", (_key, _row, transaction) => {
     transaction.on("complete", onLocalWrite);
   });
 }
@@ -133,6 +132,11 @@ async function runCycle() {
       shouldPoll = false;
       reportCloudReachable(true);
       setState({ status: "sign-in-required" });
+    } else if (error instanceof cloud.CloudRefusedError) {
+      // The cloud answered, so the connection is fine: this is a failure of its own.
+      console.error("Sync refused", error);
+      reportCloudReachable(true);
+      setState({ status: "refused" });
     } else {
       if (error instanceof cloud.CloudUnreachableError) reportCloudReachable(false);
       else console.error("Sync failed", error);
@@ -187,12 +191,26 @@ async function openRecord(keys: SyncKeys, id: string, blob: string) {
   return isUsable ? (value as Envelope) : null;
 }
 
-/** Most-recent-save. Rows saved at the same instant still pick the same winner everywhere. */
-function isNewer(incoming: SyncedRow, local: SyncedRow) {
-  const incomingTime = Date.parse(incoming.savedAt);
-  const localTime = Date.parse(local.savedAt);
-  if (incomingTime !== localTime) return incomingTime > localTime;
-  return JSON.stringify(incoming) > JSON.stringify(local);
+/** The same content gives the same text on every device, whatever order its fields were set. */
+function canonicalJson(value: unknown) {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    item !== null && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => (a < b ? -1 : 1)))
+      : item,
+  );
+}
+
+/**
+ * Most-recent-save: above zero when `incoming` wins, below when `local` does, and
+ * zero when they are the same. Rows saved at the same instant are ordered by their
+ * content alone, so every device picks the same winner.
+ */
+function compareRows(incoming: SyncedRow, local: SyncedRow) {
+  const newer = Date.parse(incoming.savedAt) - Date.parse(local.savedAt);
+  if (newer !== 0) return newer;
+  const [incomingText, localText] = [canonicalJson(incoming), canonicalJson(local)];
+  if (incomingText === localText) return 0;
+  return incomingText > localText ? 1 : -1;
 }
 
 function applyPulledRows(envelopes: Envelope[], cursor: number, tables: string) {
@@ -204,10 +222,14 @@ function applyPulledRows(envelopes: Envelope[], cursor: number, tables: string) 
       async () => {
         for (const { table, row } of envelopes) {
           const local = await db.table<SyncedRow, string>(table).get(row.id);
-          if (!local || isNewer(row, local)) await db.table(table).put(row);
+          const order = local ? compareRows(row, local) : 1;
+          if (order > 0) await db.table(table).put(row);
+          const key = versionKey(table, row);
           // Recorded even when the local row won: it then counts as dirty and is
           // pushed, so the cloud ends up holding the winner for any later device.
-          await db.syncedVersions.put({ key: versionKey(table, row), savedAt: row.savedAt });
+          // A winner with the same `savedAt` would look clean, so it is forgotten.
+          if (order < 0 && local?.savedAt === row.savedAt) await db.syncedVersions.delete(key);
+          else await db.syncedVersions.put({ key, savedAt: row.savedAt });
         }
         await db.syncDevice.update("this", { cursor, cursorTables: tables });
       },

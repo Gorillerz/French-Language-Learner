@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import type { GeneratedDetails } from "../ai/flashcardDetails";
-import { db, type RatingValue, type VocabularyItem } from "../db";
+import { db, type VocabularyItem } from "../db";
 
 export type ItemFields = Pick<
   VocabularyItem,
@@ -60,27 +60,6 @@ export function useLastRatings(collectionId: string) {
       .sortBy("ratedAt");
     return new Map(ratings.map(({ cardId, rating }) => [cardId, rating]));
   }, [collectionId]);
-}
-
-type NewRating = {
-  item: VocabularyItem;
-  topicId: string;
-  rating: RatingValue;
-  sessionId: string;
-};
-
-export function recordRating({ item, topicId, rating, sessionId }: NewRating) {
-  const now = new Date().toISOString();
-  return db.flashcardRatings.add({
-    id: crypto.randomUUID(),
-    kind: "vocabulary",
-    cardId: item.id,
-    topicId,
-    rating,
-    sessionId,
-    ratedAt: now,
-    savedAt: now,
-  });
 }
 
 export function createCollection(name: string) {
