@@ -26,7 +26,7 @@ export function CollectionPage({ collectionId, onBack, onAddItem, onEditItem, on
             Study flashcards
           </button>
         )}
-        <button type="button" className="secondary-button" onClick={onAddItem}>
+        <button type="button" className="action-button" onClick={onAddItem}>
           Add item
         </button>
       </div>

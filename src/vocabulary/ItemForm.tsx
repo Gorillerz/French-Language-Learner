@@ -57,7 +57,7 @@ export function ItemForm({ title, initial = blank, onSave, onCancel }: Props) {
         <button type="submit" className="primary-button">
           Save
         </button>
-        <button type="button" className="secondary-button" onClick={onCancel}>
+        <button type="button" className="action-button" onClick={onCancel}>
           Cancel
         </button>
       </div>

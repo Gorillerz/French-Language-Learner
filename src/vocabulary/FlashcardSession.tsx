@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FlashcardRating, VocabularyItem } from "../db";
+import type { RatingValue, VocabularyItem } from "../db";
 import { recordRating } from "./store";
 
 type Props = {
@@ -52,7 +52,7 @@ export function FlashcardSession({ collectionId, items, onBack }: Props) {
   );
 }
 
-const ratings: { rating: FlashcardRating["rating"]; label?: string }[] = [
+const ratings: { rating: RatingValue; label?: string }[] = [
   { rating: 1, label: "Forgot it" },
   { rating: 2 },
   { rating: 3 },
@@ -61,7 +61,7 @@ const ratings: { rating: FlashcardRating["rating"]; label?: string }[] = [
 
 type FlashcardProps = {
   item: VocabularyItem;
-  onRate: (rating: FlashcardRating["rating"]) => Promise<void>;
+  onRate: (rating: RatingValue) => Promise<void>;
 };
 
 function Flashcard({ item, onRate }: FlashcardProps) {
@@ -88,7 +88,7 @@ function Flashcard({ item, onRate }: FlashcardProps) {
               <button
                 key={rating}
                 type="button"
-                className="secondary-button"
+                className="action-button"
                 disabled={saving}
                 onClick={() => {
                   setSaving(true);

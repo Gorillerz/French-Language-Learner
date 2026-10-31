@@ -5,14 +5,16 @@ import { usefulExpressions } from "./usefulExpressions";
 export const builtInCollections = [mostCommonWords, usefulExpressions];
 
 /**
- * savedAt 0 makes built-in rows older than any Learner edit, so an edit always
+ * The epoch makes built-in rows older than any Learner edit, so an edit always
  * wins most-recent-save against the copy another device seeds for itself.
  */
+const builtInSavedAt = new Date(0).toISOString();
+
 export const seedCollections: Collection[] = builtInCollections.map(({ id, name }, position) => ({
   id,
   name,
   position,
-  savedAt: 0,
+  savedAt: builtInSavedAt,
 }));
 
 export const seedItems: VocabularyItem[] = builtInCollections.flatMap((collection) =>
@@ -21,6 +23,6 @@ export const seedItems: VocabularyItem[] = builtInCollections.flatMap((collectio
     id: `${collection.id}/${slug}`,
     collectionId: collection.id,
     position,
-    savedAt: 0,
+    savedAt: builtInSavedAt,
   })),
 );

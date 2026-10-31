@@ -5,7 +5,8 @@ export type Collection = {
   id: string;
   name: string;
   position: number;
-  savedAt: number;
+  /** ISO 8601. */
+  savedAt: string;
 };
 
 export type VocabularyItem = {
@@ -17,19 +18,25 @@ export type VocabularyItem = {
   example: string;
   pronunciation: string;
   position: number;
-  savedAt: number;
+  /** ISO 8601. */
+  savedAt: string;
 };
 
+export type RatingValue = 1 | 2 | 3 | 4;
+
+/** One flashcard self-rating. Every rating is kept, so a card can have many rows. */
 export type FlashcardRating = {
   id: string;
   kind: "vocabulary" | "grammar";
   cardId: string;
-  /** The collection id for vocabulary, the grammar concept id for grammar. */
+  /** The collection or grammar concept id. */
   topicId: string;
-  rating: 1 | 2 | 3 | 4;
+  rating: RatingValue;
   sessionId: string;
-  ratedAt: number;
-  savedAt: number;
+  /** ISO 8601. */
+  ratedAt: string;
+  /** ISO 8601. */
+  savedAt: string;
 };
 
 export const db = new Dexie("french-learning") as Dexie & {
@@ -41,7 +48,7 @@ export const db = new Dexie("french-learning") as Dexie & {
 db.version(1).stores({
   collections: "id, position",
   vocabularyItems: "id, collectionId",
-  flashcardRatings: "id, kind, cardId, topicId, sessionId, ratedAt",
+  flashcardRatings: "id, kind, cardId, topicId, sessionId, ratedAt, savedAt",
 });
 
 db.on("populate", async (tx) => {

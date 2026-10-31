@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, type FlashcardRating, type VocabularyItem } from "../db";
+import { db, type RatingValue, type VocabularyItem } from "../db";
 
 export type ItemFields = Pick<
   VocabularyItem,
@@ -39,12 +39,12 @@ export function useLastRatings(collectionId: string) {
 type NewRating = {
   item: VocabularyItem;
   topicId: string;
-  rating: FlashcardRating["rating"];
+  rating: RatingValue;
   sessionId: string;
 };
 
 export function recordRating({ item, topicId, rating, sessionId }: NewRating) {
-  const now = Date.now();
+  const now = new Date().toISOString();
   return db.flashcardRatings.add({
     id: crypto.randomUUID(),
     kind: "vocabulary",
@@ -65,7 +65,7 @@ export function createCollection(name: string) {
       id,
       name,
       position: (last?.position ?? -1) + 1,
-      savedAt: Date.now(),
+      savedAt: new Date().toISOString(),
     });
     return id;
   });
@@ -79,11 +79,11 @@ export function addItem(collectionId: string, fields: ItemFields) {
       id: crypto.randomUUID(),
       collectionId,
       position: Math.max(-1, ...items.map((item) => item.position)) + 1,
-      savedAt: Date.now(),
+      savedAt: new Date().toISOString(),
     });
   });
 }
 
 export function updateItem(id: string, fields: ItemFields) {
-  return db.vocabularyItems.update(id, { ...fields, savedAt: Date.now() });
+  return db.vocabularyItems.update(id, { ...fields, savedAt: new Date().toISOString() });
 }

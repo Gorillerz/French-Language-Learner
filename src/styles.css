@@ -73,6 +73,121 @@ p {
   padding: 1rem;
 }
 
+.shell-main h2 {
+  margin-bottom: 1rem;
+}
+
+.concept-list,
+.examples {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.concept-link {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.concept-link span {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.concept {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 44rem;
+  line-height: 1.5;
+}
+
+.concept h3,
+.concept h4 {
+  margin: 0;
+}
+
+.concept h4 {
+  margin-top: 0.5rem;
+}
+
+.examples li {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.625rem 0.875rem;
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-surface);
+}
+
+.translation {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.action-button {
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.practice-buttons,
+.rating-buttons {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rating-buttons {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.flashcard-text {
+  font-size: 1.25rem;
+}
+
+.flashcard-answer {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 30rem) {
+  .practice-buttons {
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+
+  .rating-buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.link-button {
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .shell-nav {
   grid-area: nav;
   display: flex;
@@ -203,45 +318,15 @@ p {
   margin-top: 0.5rem;
 }
 
-.rating-buttons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-}
-
-.rating-buttons button {
-  padding-inline: 0.25rem;
-}
-
-.primary-button,
-.secondary-button {
-  min-height: 2.75rem;
+.primary-button {
+  min-height: 3rem;
   padding: 0.5rem 1rem;
   border: 1px solid var(--color-primary);
   border-radius: 0.5rem;
-  font: inherit;
-  cursor: pointer;
-}
-
-.primary-button {
   background: var(--color-primary);
-  color: #ffffff;
-}
-
-.secondary-button {
-  background: var(--color-surface);
-  color: var(--color-primary);
-}
-
-.link-button {
-  justify-self: start;
-  min-height: 2.75rem;
-  padding: 0.25rem 0;
-  border: 0;
-  background: none;
   font: inherit;
-  color: var(--color-primary);
-  text-decoration: underline;
+  font-weight: 600;
+  color: #ffffff;
   cursor: pointer;
 }
 
