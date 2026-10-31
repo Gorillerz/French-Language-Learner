@@ -13,4 +13,4 @@ First time: `npm install`, then `npx playwright install chromium`.
 | `npm test` | Runs the Vitest unit tests, then the Playwright tests. |
 | `npm run test:e2e` | Runs only the Playwright tests. |
 
-The Playwright tests build the app to `dist-test/` against local cloud and AI stand-ins, then run on desktop and mobile Chromium. They use ports 4310 to 4312; set `E2E_PORT_BASE` to run on others. The installability test runs in the Edge installed with Windows and is skipped on other platforms.
+The Playwright tests build the app to `dist-test/` against local cloud and AI stand-ins, then run on desktop and mobile Chromium. They use ports 4310 to 4312; set `E2E_PORT_BASE` to run on others. `docs/sync-contract.md` describes what the cloud stand-in implements. The installability test runs in the Edge installed with Windows and is skipped on other platforms.

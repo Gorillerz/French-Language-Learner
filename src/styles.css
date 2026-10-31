@@ -53,8 +53,9 @@ p {
 
 .shell-status {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.25rem 0.75rem;
   font-size: 0.8125rem;
   color: var(--color-muted);
 }
@@ -66,6 +67,43 @@ p {
 
 .connection-offline {
   color: var(--color-offline);
+}
+
+.notice {
+  flex-basis: 100%;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.notice-lost,
+.form-error {
+  color: var(--color-offline);
+}
+
+.notice-restored {
+  color: var(--color-online);
+}
+
+.recovery-code {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.0625rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.stack-form .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+}
+
+.stack-form .checkbox-label input {
+  width: auto;
 }
 
 .shell-main {
@@ -199,7 +237,7 @@ p {
 .shell-nav button {
   flex: 1;
   min-height: 3rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.25rem;
   border: 0;
   background: none;
   font: inherit;
@@ -418,6 +456,7 @@ p {
 
   .shell-nav button {
     flex: none;
+    padding-inline: 1rem;
     text-align: left;
   }
 

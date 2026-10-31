@@ -1,17 +1,52 @@
-import { useState } from "react";
-import { useIsOnline } from "./connection";
+import { useEffect, useState } from "react";
+import { useConnection, useConnectionNotice, type Connection } from "./connection";
 import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
 import { QuizArea } from "./quiz/QuizArea";
+import { startSync, useSyncState, type SyncStatus } from "./sync/engine";
+import { SyncArea } from "./sync/SyncArea";
 import { VocabularyArea } from "./vocabulary/VocabularyArea";
 
-const areas = ["Vocabulary", "Grammar", "Quiz", "Progress"] as const;
+const areas = ["Vocabulary", "Grammar", "Quiz", "Progress", "Sync"] as const;
 type Area = (typeof areas)[number];
+
+const connectionLabels: Record<Connection, string> = {
+  online: "Online",
+  offline: "Offline",
+  lost: "Connection lost",
+};
+
+const syncLabels: Partial<Record<SyncStatus, string>> = {
+  "not-set-up": "Sync: not set up",
+  syncing: "Sync: syncing",
+  "up-to-date": "Sync: up to date",
+  waiting: "Sync: waiting for connection",
+  "sign-in-required": "Sync: sign in again",
+};
+
+const noticeText = {
+  lost: "Connection lost. You can keep working.",
+  restored: "Connection restored.",
+};
+
+const syncNoticeText = {
+  lost: "Your changes will sync when it returns.",
+  restored: "Your changes are syncing.",
+};
+
+const statusesWithSync: SyncStatus[] = ["syncing", "up-to-date", "waiting"];
 
 export function App() {
   const [area, setArea] = useState<Area>("Vocabulary");
-  const isOnline = useIsOnline();
+  const connection = useConnection();
+  const notice = useConnectionNotice();
   const isOfflineReady = useIsOfflineReady();
+  const syncStatus = useSyncState().status;
+  const syncLabel = syncLabels[syncStatus];
+
+  useEffect(() => {
+    void startSync();
+  }, []);
 
   return (
     <div className="shell">
@@ -19,14 +54,25 @@ export function App() {
         <h1>French Learning</h1>
         <div className="shell-status">
           {isOfflineReady && <span>Ready for offline use</span>}
+          {syncLabel && (
+            <p role="status" aria-label="Sync">
+              {syncLabel}
+            </p>
+          )}
           <p
             role="status"
             aria-label="Connection"
-            className={isOnline ? "connection" : "connection connection-offline"}
+            className={connection === "online" ? "connection" : "connection connection-offline"}
           >
-            {isOnline ? "Online" : "Offline"}
+            {connectionLabels[connection]}
           </p>
         </div>
+        {notice && (
+          <p role="status" aria-label="Network notice" className={`notice notice-${notice}`}>
+            {noticeText[notice]}
+            {statusesWithSync.includes(syncStatus) && ` ${syncNoticeText[notice]}`}
+          </p>
+        )}
       </header>
 
       <nav className="shell-nav" aria-label="Areas">
@@ -47,6 +93,7 @@ export function App() {
         {area === "Vocabulary" && <VocabularyArea />}
         {area === "Grammar" && <GrammarArea />}
         {area === "Quiz" && <QuizArea />}
+        {area === "Sync" && <SyncArea />}
       </main>
     </div>
   );

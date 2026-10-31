@@ -33,7 +33,10 @@ export class ServiceStandIn {
     });
   }
 
-  /** Scripts the reply to a route, replacing any earlier script for it. */
+  /**
+   * Scripts the reply to a route, replacing any earlier script for it. A path
+   * without a query also answers calls to that path with one.
+   */
   respond(method: string, path: string, responder: Responder) {
     this.responders.set(`${method} ${path}`, responder);
   }
@@ -85,7 +88,9 @@ export class ServiceStandIn {
     };
     this.requests.push(recorded);
 
-    const responder = this.responders.get(`${recorded.method} ${recorded.path}`);
+    const responder =
+      this.responders.get(`${recorded.method} ${recorded.path}`) ??
+      this.responders.get(`${recorded.method} ${recorded.path.split("?")[0]}`);
     const reply =
       typeof responder === "function"
         ? responder(recorded)
