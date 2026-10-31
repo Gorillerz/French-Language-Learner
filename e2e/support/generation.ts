@@ -40,10 +40,10 @@ export function question(tag: string, format = "complete"): GeneratedReplyQuesti
   };
 }
 
-/** A valid batch of ten that uses every format. */
+/** A valid batch of ten that uses every format. Padded so no tag is part of another. */
 export function batch(tag = "q") {
   return Array.from({ length: 10 }, (_, index) =>
-    question(`${tag}${index + 1}`, formats[index % formats.length]),
+    question(`${tag}${String(index + 1).padStart(2, "0")}`, formats[index % formats.length]),
   );
 }
 
