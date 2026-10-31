@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useConnection, useConnectionNotice, type Connection } from "./connection";
 import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
+import { ProgressArea } from "./progress/ProgressArea";
 import { QuizArea } from "./quiz/QuizArea";
 import { startSync, useSyncState, type SyncStatus } from "./sync/engine";
 import { SyncArea } from "./sync/SyncArea";
@@ -93,6 +94,7 @@ export function App() {
         {area === "Vocabulary" && <VocabularyArea />}
         {area === "Grammar" && <GrammarArea />}
         {area === "Quiz" && <QuizArea />}
+        {area === "Progress" && <ProgressArea />}
         {area === "Sync" && <SyncArea />}
       </main>
     </div>
