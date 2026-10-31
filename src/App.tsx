@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useIsOnline } from "./connection";
 import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
+import { QuizArea } from "./quiz/QuizArea";
 import { VocabularyArea } from "./vocabulary/VocabularyArea";
 
-const areas = ["Vocabulary", "Grammar", "Progress"] as const;
+const areas = ["Vocabulary", "Grammar", "Quiz", "Progress"] as const;
 type Area = (typeof areas)[number];
 
 export function App() {
@@ -45,6 +46,7 @@ export function App() {
         <h2>{area}</h2>
         {area === "Vocabulary" && <VocabularyArea />}
         {area === "Grammar" && <GrammarArea />}
+        {area === "Quiz" && <QuizArea />}
       </main>
     </div>
   );

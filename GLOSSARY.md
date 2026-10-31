@@ -24,3 +24,15 @@ The correct answer and any accepted alternatives for a practice question, establ
 
 **Distractor**:
 An incorrect answer option in a multiple-choice question.
+
+**Attempt**:
+One answered quiz question, kept with its correctness, time, session, and collection or grammar concept. Repeating a question makes a new attempt.
+
+**General quiz**:
+A short quiz across vocabulary and grammar that begins with the questions of highest review priority.
+
+**Focused quiz**:
+A quiz on one collection or grammar concept chosen by the learner.
+
+**Review priority**:
+The relative order in which questions are worth reviewing. It is never a due date or a mastery level.
