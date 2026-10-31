@@ -228,7 +228,7 @@ describe("records", () => {
     const { keys } = await setup();
     const blob = await encryptRecord(keys, "record-1", row);
     const bytes = Uint8Array.from(atob(blob.replace(/^v1\./, "")), (c) => c.charCodeAt(0));
-    bytes[bytes.length - 1] ^= 1;
+    bytes[bytes.length - 1]! ^= 1;
     const tampered = `v1.${btoa(String.fromCharCode(...bytes))}`;
     await expect(decryptRecord(keys, "record-1", tampered)).rejects.toBeInstanceOf(
       UnreadableRecordError,
