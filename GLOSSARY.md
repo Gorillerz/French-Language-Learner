@@ -19,6 +19,9 @@ A prompt that asks the learner to recall vocabulary or construct a French senten
 **Curated question**:
 A practice question included with a built-in vocabulary collection or grammar concept.
 
+**Generated question**:
+A practice question written by AI at the learner's request, in a batch of exactly 10 for one collection or grammar concept. Each has an explanation for every option.
+
 **Answer key**:
 The correct answer and any accepted alternatives for a practice question, established when the question is created.
 
@@ -34,6 +37,9 @@ A short quiz across vocabulary and grammar that begins with the questions of hig
 **Focused quiz**:
 A quiz on one collection or grammar concept chosen by the learner.
 
+**Quiz review**:
+A look back over the attempts of one quiz, showing the correct and chosen answers and, for generated questions, the explanations. It is the only place explanations appear.
+
 **Passphrase**:
 The long secret, chosen by the learner, that unlocks synced learning data on each device. It never leaves a device and it is not the sign-in password.
 
@@ -45,6 +51,9 @@ The ordinary account that identifies the learner to the sync service. Resetting 
 
 **Topic help**:
 Questions the learner asks AI about one flashcard or grammar concept. The answers are not saved.
+
+**Follow-up question**:
+A question the learner asks AI about one quiz question during quiz review. The answers are not saved.
 
 **Review priority**:
 The relative order in which questions are worth reviewing. It is never a due date or a mastery level.

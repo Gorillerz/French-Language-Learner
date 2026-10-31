@@ -1,12 +1,7 @@
 import { useState } from "react";
-import type { QuestionFormat } from "./content";
+import { formats } from "./formats";
+import { QuizReview } from "./QuizReview";
 import { recordAttempt, type QuizQuestion } from "./store";
-
-const formats: Record<QuestionFormat, { instruction: string; promptLang: string; optionLang: string }> = {
-  complete: { instruction: "Complete the sentence", promptLang: "fr", optionLang: "fr" },
-  "to-english": { instruction: "Choose the English meaning", promptLang: "fr", optionLang: "en" },
-  "to-french": { instruction: "Choose the French translation", promptLang: "en", optionLang: "fr" },
-};
 
 type Props = {
   /** The questions as they stood when the quiz began. */
@@ -23,7 +18,18 @@ export function QuizSession({ questions, topicName, onBack }: Props) {
   const [ended, setEnded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
   const question = questions[position];
+
+  if (isReviewing) {
+    return (
+      <QuizReview
+        sessionId={sessionId}
+        backLabel="Back to result"
+        onBack={() => setIsReviewing(false)}
+      />
+    );
+  }
 
   if (ended || !question) {
     const answeredCount = position + (picked === null ? 0 : 1);
@@ -34,6 +40,11 @@ export function QuizSession({ questions, topicName, onBack }: Props) {
             ? "No questions answered"
             : `${correctCount} of ${answeredCount} correct`}
         </p>
+        {answeredCount > 0 && (
+          <button type="button" className="primary-button" onClick={() => setIsReviewing(true)}>
+            Review answers
+          </button>
+        )}
         <button type="button" className="link-button" onClick={onBack}>
           Back to quizzes
         </button>
@@ -52,7 +63,7 @@ export function QuizSession({ questions, topicName, onBack }: Props) {
     try {
       // Show the outcome only once it's saved, so nothing shown as done can be
       // lost by closing the app straight afterwards.
-      await recordAttempt({ question, isCorrect, sessionId });
+      await recordAttempt({ question, isCorrect, chosenOption: option, sessionId });
       setPicked(option);
       if (isCorrect) setCorrectCount((count) => count + 1);
     } catch {

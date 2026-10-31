@@ -14,12 +14,16 @@ type Props = {
   /** Gets the model's text. An `AiError` from here is shown, and the Learner can resend. */
   onReply: (text: string) => void | Promise<void>;
   onCancel: () => void;
+  /** Anything else the Learner should know about what is, or is not, being sent. */
+  note?: string;
 };
 
 const actionSummaries: Record<LearnerAction, string> = {
   "fill-flashcard-details": "Fill the blank details of this flashcard.",
   "ask-about-flashcard": "Ask a question about this flashcard.",
   "ask-about-grammar-concept": "Ask a question about this grammar concept.",
+  "generate-quiz-questions": "Write 10 new quiz questions for this topic.",
+  "ask-about-quiz-question": "Ask a question about this quiz question.",
 };
 
 const roleLabels: Record<AiMessage["role"], string> = {
@@ -29,7 +33,7 @@ const roleLabels: Record<AiMessage["role"], string> = {
 };
 
 /** Shows exactly what a prepared request contains, and sends it only on the Learner's word. */
-export function AiRequestReview({ request, onReply, onCancel }: Props) {
+export function AiRequestReview({ request, onReply, onCancel, note }: Props) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isBlocked, explanation } = useAiBlocker();
@@ -60,6 +64,7 @@ export function AiRequestReview({ request, onReply, onCancel }: Props) {
         Only the text below goes to {aiServiceName()}, using the model {request.model}, along with
         your API key. Nothing else from the app is included.
       </p>
+      {note && <p>{note}</p>}
       {request.messages.map((message, index) => (
         <div key={index} className="ai-message">
           <strong>{roleLabels[message.role]}</strong>

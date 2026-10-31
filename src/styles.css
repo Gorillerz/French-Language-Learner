@@ -302,6 +302,45 @@ p {
   cursor: pointer;
 }
 
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topic-row .row-button {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.topic-row .link-button {
+  flex-shrink: 0;
+}
+
+.review-date {
+  display: block;
+  font-weight: 400;
+}
+
+.review-question {
+  gap: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.review-prompt {
+  margin: 0;
+}
+
+.review-option {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  font-weight: 400;
+}
+
 .item-row {
   display: flex;
   align-items: center;

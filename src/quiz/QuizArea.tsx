@@ -1,30 +1,49 @@
 import { useState } from "react";
 import { grammarConcepts } from "../grammar/content";
 import { useCollections } from "../vocabulary/store";
+import { GenerateQuestions } from "./GenerateQuestions";
+import { QuizReview } from "./QuizReview";
 import { QuizSession } from "./QuizSession";
-import { buildGeneralQuiz, buildTopicQuiz, type QuizQuestion } from "./store";
+import {
+  buildGeneralQuiz,
+  buildTopicQuiz,
+  useRecentQuizzes,
+  type QuizQuestion,
+  type QuizTopic,
+  type RecentQuiz,
+} from "./store";
 
-const grammarTopics = grammarConcepts.map(({ id, title }) => ({ id, name: title }));
+const grammarTopics: QuizTopic[] = grammarConcepts.map(({ id, title }) => ({
+  id,
+  name: title,
+  kind: "grammar",
+}));
 
 type View =
   | { name: "start" }
   | { name: "quiz"; questions: QuizQuestion[] }
-  | { name: "noQuestions"; topicName: string };
+  | { name: "generate"; topic: QuizTopic; isEmpty: boolean }
+  | { name: "review"; sessionId: string };
 
 export function QuizArea() {
   const collections = useCollections();
+  const recentQuizzes = useRecentQuizzes();
   const [view, setView] = useState<View>({ name: "start" });
 
-  const collectionTopics = (collections ?? []).map(({ id, name }) => ({ id, name }));
+  const collectionTopics: QuizTopic[] = (collections ?? []).map(({ id, name }) => ({
+    id,
+    name,
+    kind: "vocabulary",
+  }));
   const topics = [...collectionTopics, ...grammarTopics];
   const topicName = (topicId: string) => topics.find(({ id }) => id === topicId)?.name ?? "";
 
-  async function startTopic(topicId: string) {
-    const questions = await buildTopicQuiz(topicId);
+  async function startTopic(topic: QuizTopic) {
+    const questions = await buildTopicQuiz(topic.id);
     setView(
       questions.length > 0
         ? { name: "quiz", questions }
-        : { name: "noQuestions", topicName: topicName(topicId) },
+        : { name: "generate", topic, isEmpty: true },
     );
   }
 
@@ -33,19 +52,27 @@ export function QuizArea() {
   }
 
   const backToStart = () => setView({ name: "start" });
+  const generate = (topic: QuizTopic) => setView({ name: "generate", topic, isEmpty: false });
 
   switch (view.name) {
     case "quiz":
       return <QuizSession questions={view.questions} topicName={topicName} onBack={backToStart} />;
-    case "noQuestions":
+    case "generate":
       return (
         <section className="vocabulary">
-          <p>{view.topicName} has no questions yet.</p>
+          <h3>{view.topic.name}</h3>
+          <GenerateQuestions
+            topic={view.topic}
+            isEmpty={view.isEmpty}
+            onStartQuiz={() => void startTopic(view.topic)}
+          />
           <button type="button" className="link-button" onClick={backToStart}>
             Back to quizzes
           </button>
         </section>
       );
+    case "review":
+      return <QuizReview sessionId={view.sessionId} backLabel="Back to quizzes" onBack={backToStart} />;
     case "start":
       return (
         <section className="vocabulary">
@@ -53,8 +80,25 @@ export function QuizArea() {
           <button type="button" className="primary-button" onClick={() => void startGeneral()}>
             Start general quiz
           </button>
-          <TopicList title="Vocabulary collections" topics={collectionTopics} onStart={startTopic} />
-          <TopicList title="Grammar concepts" topics={grammarTopics} onStart={startTopic} />
+          <TopicList
+            title="Vocabulary collections"
+            topics={collectionTopics}
+            onStart={startTopic}
+            onGenerate={generate}
+          />
+          <TopicList
+            title="Grammar concepts"
+            topics={grammarTopics}
+            onStart={startTopic}
+            onGenerate={generate}
+          />
+          {recentQuizzes && recentQuizzes.length > 0 && (
+            <RecentQuizzes
+              quizzes={recentQuizzes}
+              topicName={topicName}
+              onReview={(sessionId) => setView({ name: "review", sessionId })}
+            />
+          )}
         </section>
       );
   }
@@ -62,24 +106,63 @@ export function QuizArea() {
 
 type TopicListProps = {
   title: string;
-  topics: { id: string; name: string }[];
-  onStart: (topicId: string) => Promise<void>;
+  topics: QuizTopic[];
+  onStart: (topic: QuizTopic) => Promise<void>;
+  onGenerate: (topic: QuizTopic) => void;
 };
 
-function TopicList({ title, topics, onStart }: TopicListProps) {
+function TopicList({ title, topics, onStart, onGenerate }: TopicListProps) {
   return (
     <>
       <h3>{title}</h3>
       <ul className="row-list" aria-label={title}>
-        {topics.map(({ id, name }) => (
-          <li key={id}>
+        {topics.map((topic) => (
+          <li key={topic.id} className="topic-row">
             <button
               type="button"
               className="row-button"
-              aria-label={`Quiz on ${name}`}
-              onClick={() => void onStart(id)}
+              aria-label={`Quiz on ${topic.name}`}
+              onClick={() => void onStart(topic)}
             >
-              {name}
+              {topic.name}
+            </button>
+            <button
+              type="button"
+              className="link-button"
+              aria-label={`More questions for ${topic.name}`}
+              onClick={() => onGenerate(topic)}
+            >
+              More questions
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+type RecentQuizzesProps = {
+  quizzes: RecentQuiz[];
+  topicName: (topicId: string) => string;
+  onReview: (sessionId: string) => void;
+};
+
+function RecentQuizzes({ quizzes, topicName, onReview }: RecentQuizzesProps) {
+  return (
+    <>
+      <h3>Recent quizzes</h3>
+      <ul className="row-list" aria-label="Recent quizzes">
+        {quizzes.map(({ sessionId, answeredAt, topicIds, correct, attempts }) => (
+          <li key={sessionId}>
+            <button type="button" className="row-button" onClick={() => onReview(sessionId)}>
+              Review {topicIds.length === 1 ? topicName(topicIds[0] as string) : "mixed topics"}:{" "}
+              {correct} of {attempts} correct
+              <span className="muted review-date">
+                {new Date(answeredAt).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
             </button>
           </li>
         ))}
