@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
+import type { PracticeQuestion } from "./quiz/content";
 import type { SyncKeys } from "./sync/crypto";
 import { seedCollections, seedItems } from "./vocabulary/content";
 
@@ -52,9 +53,18 @@ export type QuizAttempt = {
   /** The collection or grammar concept id. */
   topicId: string;
   isCorrect: boolean;
+  /** The option the Learner picked. Absent on attempts from before quiz review. */
+  chosenOption?: string;
   sessionId: string;
   /** ISO 8601. */
   answeredAt: string;
+  /** ISO 8601. */
+  savedAt: string;
+};
+
+/** A question AI wrote at the Learner's request. Its answer key never changes. */
+export type GeneratedQuestion = PracticeQuestion & {
+  explanations: Record<string, string>;
   /** ISO 8601. */
   savedAt: string;
 };
@@ -77,6 +87,7 @@ export const syncedTables = [
   "flashcardRatings",
   "quizAttempts",
   "settings",
+  "generatedQuestions",
 ] as const;
 
 /** A row's `savedAt` as the cloud holds it. A different local `savedAt` means unpushed. */
@@ -104,6 +115,7 @@ export const db = new Dexie("french-learning") as Dexie & {
   flashcardRatings: EntityTable<FlashcardRating, "id">;
   quizAttempts: EntityTable<QuizAttempt, "id">;
   settings: EntityTable<Setting, "id">;
+  generatedQuestions: EntityTable<GeneratedQuestion, "id">;
   syncedVersions: EntityTable<SyncedVersion, "key">;
   syncDevice: EntityTable<SyncDevice, "id">;
 };
@@ -125,6 +137,10 @@ db.version(3).stores({
 
 db.version(4).stores({
   settings: "id, savedAt",
+});
+
+db.version(5).stores({
+  generatedQuestions: "id, topicId, savedAt",
 });
 
 db.on("populate", async (tx) => {

@@ -43,13 +43,13 @@ export function prepareDetailsRequest(item: VocabularyItem, fields: GeneratableD
 
 const MALFORMED = "The AI's reply was not in the expected form, so nothing was saved. Try again.";
 
-function parseJson(text: string): unknown {
+export function parseJson(text: string, malformed = MALFORMED): unknown {
   // Models often fence JSON even when told not to.
   const unfenced = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
   try {
     return JSON.parse(unfenced);
   } catch {
-    throw new AiError(MALFORMED);
+    throw new AiError(malformed);
   }
 }
 

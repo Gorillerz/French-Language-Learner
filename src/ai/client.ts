@@ -11,7 +11,9 @@ import { getSetting, setSetting } from "../settings";
 export type LearnerAction =
   | "fill-flashcard-details"
   | "ask-about-flashcard"
-  | "ask-about-grammar-concept";
+  | "ask-about-grammar-concept"
+  | "generate-quiz-questions"
+  | "ask-about-quiz-question";
 
 export type AiMessage = { role: "system" | "user" | "assistant"; content: string };
 

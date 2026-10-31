@@ -1,5 +1,10 @@
 /** How a question is posed. Each format sets its instruction and languages. */
-export type QuestionFormat = "complete" | "to-english" | "to-french";
+export type QuestionFormat =
+  | "complete"
+  | "to-english"
+  | "to-french"
+  | "closest-to-english"
+  | "closest-to-french";
 
 /** A multiple-choice practice question, wherever it came from. */
 export type PracticeQuestion = {
@@ -13,6 +18,8 @@ export type PracticeQuestion = {
   /** The answer key. Options are the answer and the distractors, in shuffled order. */
   answer: string;
   distractors: string[];
+  /** Why each option is right or wrong, by option. Curated questions have none. */
+  explanations?: Record<string, string>;
 };
 
 export type CuratedQuestion = Pick<PracticeQuestion, "format" | "prompt" | "answer" | "distractors"> & {
