@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useIsOnline } from "./connection";
+import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
 
 const areas = ["Vocabulary", "Grammar", "Progress"] as const;
@@ -41,6 +42,7 @@ export function App() {
 
       <main className="shell-main">
         <h2>{area}</h2>
+        {area === "Grammar" && <GrammarArea />}
       </main>
     </div>
   );
