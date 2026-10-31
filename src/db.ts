@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
+import type { SyncKeys } from "./sync/crypto";
 import { seedCollections, seedItems } from "./vocabulary/content";
 
 export type Collection = {
@@ -53,11 +54,38 @@ export type QuizAttempt = {
   savedAt: string;
 };
 
+/**
+ * Every table that syncs. A table listed here needs rows with a string `id` and an
+ * ISO `savedAt` that every write changes; nothing else has to know about sync.
+ */
+export const syncedTables = ["collections", "vocabularyItems"] as const;
+
+/** A row's `savedAt` as the cloud holds it. A different local `savedAt` means unpushed. */
+export type SyncedVersion = {
+  /** `table/rowId`. */
+  key: string;
+  savedAt: string;
+};
+
+/** This device's link to the cloud. Absent until sync is set up. */
+export type SyncDevice = {
+  id: "this";
+  email: string;
+  token: string;
+  /** Non-extractable, so this row cannot give up the raw key bytes. */
+  keys: SyncKeys;
+  cursor: number;
+  /** The `syncedTables` the cursor has seen, so an added table pulls from the start. */
+  cursorTables: string;
+};
+
 export const db = new Dexie("french-learning") as Dexie & {
   collections: EntityTable<Collection, "id">;
   vocabularyItems: EntityTable<VocabularyItem, "id">;
   flashcardRatings: EntityTable<FlashcardRating, "id">;
   quizAttempts: EntityTable<QuizAttempt, "id">;
+  syncedVersions: EntityTable<SyncedVersion, "key">;
+  syncDevice: EntityTable<SyncDevice, "id">;
 };
 
 db.version(1).stores({
@@ -68,6 +96,11 @@ db.version(1).stores({
 
 db.version(2).stores({
   quizAttempts: "id, questionId, topicId, sessionId, answeredAt, savedAt",
+});
+
+db.version(3).stores({
+  syncedVersions: "key",
+  syncDevice: "id",
 });
 
 db.on("populate", async (tx) => {

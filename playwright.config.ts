@@ -29,6 +29,7 @@ export default defineConfig({
     env: {
       VITE_CLOUD_BASE_URL: `http://127.0.0.1:${cloudPort}`,
       VITE_AI_BASE_URL: `http://127.0.0.1:${aiPort}`,
+      VITE_SYNC_POLL_MS: "400",
     },
   },
 });

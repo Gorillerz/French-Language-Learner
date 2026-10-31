@@ -34,5 +34,14 @@ A short quiz across vocabulary and grammar that begins with the questions of hig
 **Focused quiz**:
 A quiz on one collection or grammar concept chosen by the learner.
 
+**Passphrase**:
+The long secret, chosen by the learner, that unlocks synced learning data on each device. It never leaves a device and it is not the sign-in password.
+
+**Recovery code**:
+A generated code, saved by the learner, that sets a new passphrase when the old one is forgotten.
+
+**Sign-in**:
+The ordinary account that identifies the learner to the sync service. Resetting it cannot restore encrypted data.
+
 **Review priority**:
 The relative order in which questions are worth reviewing. It is never a due date or a mastery level.
