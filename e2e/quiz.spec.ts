@@ -138,7 +138,7 @@ test("low flashcard self-ratings bring a topic's questions forward", async ({ pa
   await page.goto("/");
   await page.getByRole("button", { name: "Grammar" }).click();
   await page.getByRole("button", { name: "Expressing cause" }).click();
-  await page.getByRole("button", { name: "French to English" }).click();
+  await page.getByRole("button", { name: "Practise flashcards" }).click();
   await page.getByRole("button", { name: "Show answer" }).click();
   await page.getByRole("button", { name: "Forgot it" }).click();
   await expect(page.getByText("Card 2 of")).toBeVisible();

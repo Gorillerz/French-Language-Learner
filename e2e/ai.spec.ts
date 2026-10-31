@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import type { Reply, ServiceStandIn } from "./support/service-stand-in";
+import { joinDevice, setUpFirstDevice } from "./support/sync";
 import { expect, test } from "./support/test";
 
 const apiKey = "sk-or-test-key-do-not-leak";
@@ -64,34 +65,6 @@ function sendButton(page: Page) {
 
 function chatBody(ai: ServiceStandIn, index = 0) {
   return ai.requests[index]!.body as ChatBody;
-}
-
-const email = "learner@example.com";
-const signInPassword = "ordinary-sign-in-password";
-const passphrase = "le chat dort sur le canapé bleu";
-
-async function signIn(page: Page, button: "Sign in" | "Create account") {
-  await openArea(page, "Sync");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Sign-in password").fill(signInPassword);
-  await page.getByRole("button", { name: button }).click();
-}
-
-async function setUpSync(page: Page) {
-  await signIn(page, "Create account");
-  await page.getByLabel("Passphrase", { exact: true }).fill(passphrase);
-  await page.getByLabel("Repeat passphrase").fill(passphrase);
-  await page.getByRole("button", { name: "Set passphrase" }).click();
-  await page.getByLabel("I have saved my recovery code").check();
-  await page.getByRole("button", { name: "Finish setup" }).click();
-  await expect(page.getByRole("status", { name: "Sync" })).toHaveText("Sync: up to date");
-}
-
-async function joinSync(page: Page) {
-  await signIn(page, "Sign in");
-  await page.getByLabel("Passphrase", { exact: true }).fill(passphrase);
-  await page.getByRole("button", { name: "Unlock" }).click();
-  await expect(page.getByRole("status", { name: "Sync" })).toHaveText("Sync: up to date");
 }
 
 test.describe("filling blank flashcard details", () => {
@@ -398,7 +371,7 @@ test.describe("what is shared", () => {
     await page.getByRole("button", { name: /The subjunctive/ }).click();
     await openArea(page, "Quiz");
     await openArea(page, "Progress");
-    await setUpSync(page);
+    await setUpFirstDevice(page);
     await expect.poll(() => cloud.storedRecords().length).toBeGreaterThan(0);
 
     expect(ai.requests).toEqual([]);
@@ -419,7 +392,7 @@ test.describe("what is shared", () => {
 
     await saveKey(page);
     await expect(page.getByLabel("OpenRouter API key")).toHaveValue("");
-    await setUpSync(page);
+    await setUpFirstDevice(page);
     await createCard(page, "Au bureau", "la réunion", "the meeting");
     await openDetails(page, "la réunion");
     await page.getByRole("button", { name: "Fill blank details" }).click();
@@ -437,7 +410,7 @@ test.describe("what is shared", () => {
   test("details filled on a built-in card sync as encrypted content", async ({ page, ai, cloud, newDevice }) => {
     ai.respond("POST", "/chat/completions", generated({ ...allDetails, etymology: "Du latin agere." }));
     await saveKey(page);
-    await setUpSync(page);
+    await setUpFirstDevice(page);
     await openArea(page, "Vocabulary");
     await page.getByRole("button", { name: "Open Useful expressions" }).click();
     await openDetails(page, "il s'agit de");
@@ -447,11 +420,15 @@ test.describe("what is shared", () => {
     await expect.poll(() => cloud.storedRecords().length).toBeGreaterThan(0);
 
     const other = await newDevice();
-    await joinSync(other);
+    await joinDevice(other);
     await openArea(other, "Vocabulary");
     await other.getByRole("button", { name: "Open Useful expressions" }).click();
     await openDetails(other, "il s'agit de");
     await expect(other.getByText("Du latin agere.")).toBeVisible();
+
+    // The key is a synced setting, so the second device needs no setup of its own.
+    await other.getByLabel("Your question").fill("Pourquoi ?");
+    await expect(other.getByRole("button", { name: "Ask AI" })).toBeEnabled();
 
     const stored = cloud.everythingStored();
     for (const text of ["Du latin agere.", allDetails.history, allDetails.synonyms]) {

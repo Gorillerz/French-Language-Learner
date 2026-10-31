@@ -1,3 +1,5 @@
+import { useLiveQuery } from "dexie-react-hooks";
+import { getSetting, setSetting } from "../settings";
 import type { GrammarConcept } from "./content";
 
 export const directions = [
@@ -6,6 +8,20 @@ export const directions = [
 ] as const;
 
 export type Direction = (typeof directions)[number];
+
+const DEFAULT_DIRECTION_SETTING = "grammarFlashcardDirection";
+
+/** Undefined while loading. Follows choices synced in from another device. */
+export function useDefaultDirection(): Direction | undefined {
+  return useLiveQuery(async () => {
+    const id = await getSetting(DEFAULT_DIRECTION_SETTING);
+    return directions.find((direction) => direction.id === id) ?? directions[0];
+  });
+}
+
+export function saveDefaultDirection(direction: Direction) {
+  return setSetting(DEFAULT_DIRECTION_SETTING, direction.id);
+}
 
 export type GrammarFlashcard = {
   /** Stored with ratings. Includes the direction, because each way round is recalled separately. */

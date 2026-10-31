@@ -59,11 +59,25 @@ export type QuizAttempt = {
   savedAt: string;
 };
 
+/** One Learner-selected setting. Read and written through `src/settings.ts`. */
+export type Setting = {
+  id: string;
+  value: unknown;
+  /** ISO 8601. */
+  savedAt: string;
+};
+
 /**
  * Every table that syncs. A table listed here needs rows with a string `id` and an
  * ISO `savedAt` that every write changes; nothing else has to know about sync.
  */
-export const syncedTables = ["collections", "vocabularyItems"] as const;
+export const syncedTables = [
+  "collections",
+  "vocabularyItems",
+  "flashcardRatings",
+  "quizAttempts",
+  "settings",
+] as const;
 
 /** A row's `savedAt` as the cloud holds it. A different local `savedAt` means unpushed. */
 export type SyncedVersion = {
@@ -84,22 +98,14 @@ export type SyncDevice = {
   cursorTables: string;
 };
 
-/** One Learner-selected setting. `value` is whatever the setting's owner stores. */
-export type Setting = {
-  id: string;
-  value: unknown;
-  /** ISO 8601. */
-  savedAt: string;
-};
-
 export const db = new Dexie("french-learning") as Dexie & {
   collections: EntityTable<Collection, "id">;
   vocabularyItems: EntityTable<VocabularyItem, "id">;
   flashcardRatings: EntityTable<FlashcardRating, "id">;
   quizAttempts: EntityTable<QuizAttempt, "id">;
+  settings: EntityTable<Setting, "id">;
   syncedVersions: EntityTable<SyncedVersion, "key">;
   syncDevice: EntityTable<SyncDevice, "id">;
-  settings: EntityTable<Setting, "id">;
 };
 
 db.version(1).stores({

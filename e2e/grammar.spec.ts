@@ -7,6 +7,11 @@ async function openConcept(page: Page, name: string) {
   await expect(page.getByRole("heading", { name })).toBeVisible();
 }
 
+async function practise(page: Page, direction: "French to English" | "English to French") {
+  await page.getByRole("radio", { name: direction }).check();
+  await page.getByRole("button", { name: "Practise flashcards" }).click();
+}
+
 async function rateCurrentCard(page: Page, rating: "Forgot it" | "Effortless") {
   await page.getByRole("button", { name: "Show answer" }).click();
   await page.getByRole("button", { name: rating }).click();
@@ -43,10 +48,28 @@ test("a concept page explains the rule with translated examples", async ({ page 
   expect(scrollWidth).toBeLessThanOrEqual(innerWidth);
 });
 
+test("the chosen flashcard direction is remembered for every concept", async ({ page }) => {
+  await page.goto("/");
+  await openConcept(page, "Past tenses");
+  await expect(page.getByRole("radio", { name: "French to English" })).toBeChecked();
+
+  await page.getByRole("radio", { name: "English to French" }).check();
+  await page.getByRole("button", { name: "All concepts" }).click();
+  await openConcept(page, "Expressing cause");
+  await expect(page.getByRole("radio", { name: "English to French" })).toBeChecked();
+
+  await page.reload();
+  await openConcept(page, "Expressing cause");
+
+  await expect(page.getByRole("radio", { name: "English to French" })).toBeChecked();
+  await page.getByRole("button", { name: "Practise flashcards" }).click();
+  await expect(page.getByRole("region", { name: "Flashcard" })).toContainText("Translate into French");
+});
+
 test("a French sentence asks for its English translation, revealed on request", async ({ page }) => {
   await page.goto("/");
   await openConcept(page, "Past tenses");
-  await page.getByRole("button", { name: "French to English" }).click();
+  await practise(page, "French to English");
 
   const card = page.getByRole("region", { name: "Flashcard" });
   await expect(card).toContainText("Translate into English");
@@ -63,7 +86,7 @@ test("a French sentence asks for its English translation, revealed on request", 
 test("an English sentence asks for its French translation, revealed on request", async ({ page }) => {
   await page.goto("/");
   await openConcept(page, "Expressing cause");
-  await page.getByRole("button", { name: "English to French" }).click();
+  await practise(page, "English to French");
 
   const card = page.getByRole("region", { name: "Flashcard" });
   await expect(card).toContainText("Translate into French");
@@ -78,7 +101,7 @@ test("an English sentence asks for its French translation, revealed on request",
 test("rating a card moves on, and the session ends with its result", async ({ page }) => {
   await page.goto("/");
   await openConcept(page, "The subjunctive");
-  await page.getByRole("button", { name: "French to English" }).click();
+  await practise(page, "French to English");
 
   const card = page.getByRole("region", { name: "Flashcard" });
   await expect(card).toContainText("Card 1 of 12");
@@ -104,7 +127,7 @@ test("ratings and grammar content are still there when the app reopens offline",
 
   await openConcept(page, "Object pronouns, y and en");
   await expect(page.getByText("No ratings yet")).toBeVisible();
-  await page.getByRole("button", { name: "English to French" }).click();
+  await practise(page, "English to French");
   await rateCurrentCard(page, "Forgot it");
   await rateCurrentCard(page, "Effortless");
   await expect(page.getByText("Card 3 of 12")).toBeVisible();
@@ -118,7 +141,7 @@ test("ratings and grammar content are still there when the app reopens offline",
   await expect(reopened.getByText("Envoie-la-moi dès que possible.")).toBeVisible();
   await expect(reopened.getByText("2 ratings, average 2.5")).toBeVisible();
 
-  await reopened.getByRole("button", { name: "English to French" }).click();
+  await practise(reopened, "English to French");
   await rateCurrentCard(reopened, "Effortless");
   await expect(reopened.getByText("Card 2 of 12")).toBeVisible();
   await reopened.getByRole("button", { name: "Back to Object pronouns, y and en" }).click();
@@ -128,7 +151,7 @@ test("ratings and grammar content are still there when the app reopens offline",
 test("ratings are kept separately for each concept", async ({ page }) => {
   await page.goto("/");
   await openConcept(page, "Past tenses");
-  await page.getByRole("button", { name: "French to English" }).click();
+  await practise(page, "French to English");
   await rateCurrentCard(page, "Effortless");
   await expect(page.getByText("Card 2 of 12")).toBeVisible();
   await page.getByRole("button", { name: "Back to Past tenses" }).click();
