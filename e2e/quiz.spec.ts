@@ -1,70 +1,27 @@
 import type { Page } from "@playwright/test";
-import { curatedQuestions } from "../src/quiz/content";
+import {
+  answer,
+  currentQuestion,
+  openArea,
+  pickOption,
+  quizQuestion,
+  startTopicQuiz,
+} from "./support/quizzes";
 import { expect, test } from "./support/test";
 
-type StoredAttempt = {
-  id: string;
-  questionId: string;
-  topicId: string;
-  isCorrect: boolean;
-  sessionId: string;
-  answeredAt: string;
-  savedAt: string;
-};
-
 function openQuizzes(page: Page) {
-  return page.getByRole("navigation", { name: "Areas" }).getByRole("button", { name: "Quiz" }).click();
+  return openArea(page, "Quiz");
 }
 
-function quizQuestion(page: Page) {
-  return page.getByRole("region", { name: "Quiz question" });
-}
-
-/** Attempts have no Learner-visible home until #16, so read them from the local store. */
-function storedAttempts(page: Page) {
-  return page.evaluate(
-    () =>
-      new Promise<StoredAttempt[]>((resolve, reject) => {
-        const open = indexedDB.open("french-learning");
-        open.onerror = () => reject(open.error);
-        open.onsuccess = () => {
-          const connection = open.result;
-          const rows = connection.transaction("quizAttempts").objectStore("quizAttempts").getAll();
-          rows.onerror = () => reject(rows.error);
-          rows.onsuccess = () => {
-            connection.close();
-            resolve(rows.result);
-          };
-        };
-      }),
-  );
-}
-
-async function currentQuestion(page: Page) {
-  const prompt = await quizQuestion(page).getByRole("heading").innerText();
-  const question = curatedQuestions.find((candidate) => candidate.prompt === prompt);
-  if (!question) throw new Error(`Not a curated question: ${prompt}`);
-  return question;
-}
-
-function pickOption(page: Page, option: string) {
+function quizResult(page: Page, topic: string) {
   return page
-    .getByRole("group", { name: "Answer options" })
-    .getByRole("button", { name: option, exact: true })
-    .click();
+    .getByRole("region", { name: "Quiz results" })
+    .getByRole("listitem")
+    .filter({ hasText: topic });
 }
 
-/** Answers the current question and moves on. Returns the question that was asked. */
-async function answer(page: Page, { correctly }: { correctly: boolean }) {
-  const question = await currentQuestion(page);
-  await pickOption(page, correctly ? question.answer : (question.distractors[0] as string));
-  await quizQuestion(page).getByRole("button", { name: /Next question|See result/ }).click();
-  return question;
-}
-
-async function startTopicQuiz(page: Page, topic: string) {
-  await page.getByRole("button", { name: `Quiz on ${topic}` }).click();
-  await expect(quizQuestion(page)).toBeVisible();
+function sessions(page: Page) {
+  return page.getByRole("list", { name: "Sessions" }).getByRole("listitem");
 }
 
 test("a right answer is confirmed, and a wrong one shows the answer key", async ({ page }) => {
@@ -98,7 +55,8 @@ test("a question offers its answer and distractors, and can only be answered onc
   await pickOption(page, question.answer);
   for (const option of await options.all()) await expect(option).toBeDisabled();
 
-  await expect.poll(async () => (await storedAttempts(page)).length).toBe(1);
+  await openArea(page, "Progress");
+  await expect(quizResult(page, "Useful expressions")).toContainText("1 attempt");
 });
 
 test("a focused quiz covers the chosen topic and records every attempt", async ({ page }) => {
@@ -116,18 +74,11 @@ test("a focused quiz covers the chosen topic and records every attempt", async (
   expect(new Set(asked.map(({ id }) => id)).size).toBe(20);
   expect(new Set(asked.map(({ topicId }) => topicId))).toEqual(new Set(["past-tenses"]));
 
-  const attempts = await storedAttempts(page);
-  expect(attempts).toHaveLength(20);
-  expect(new Set(attempts.map(({ id }) => id)).size).toBe(20);
-  expect(new Set(attempts.map(({ sessionId }) => sessionId)).size).toBe(1);
-  expect(attempts.filter(({ isCorrect }) => !isCorrect).map(({ questionId }) => questionId)).toEqual([
-    asked[0]?.id,
-  ]);
-  for (const attempt of attempts) {
-    expect(attempt.topicId).toBe("past-tenses");
-    expect(Date.parse(attempt.answeredAt)).not.toBeNaN();
-    expect(attempt.savedAt).toBe(attempt.answeredAt);
-  }
+  await openArea(page, "Progress");
+  await expect(quizResult(page, "Past tenses")).toContainText("95% correct");
+  await expect(quizResult(page, "Past tenses")).toContainText("20 attempts");
+  await expect(sessions(page)).toHaveCount(1);
+  await expect(sessions(page)).toContainText("19 of 20 correct (95%)");
 });
 
 test("a general quiz draws from both vocabulary and grammar", async ({ page }) => {
@@ -143,8 +94,8 @@ test("a general quiz draws from both vocabulary and grammar", async ({ page }) =
 
   await expect(page.getByRole("status").filter({ hasText: "10 of 10 correct" })).toBeVisible();
   expect(new Set(asked.map(({ kind }) => kind))).toEqual(new Set(["vocabulary", "grammar"]));
-  const sessions = (await storedAttempts(page)).map(({ sessionId }) => sessionId);
-  expect(new Set(sessions).size).toBe(1);
+  await openArea(page, "Progress");
+  await expect(sessions(page)).toHaveCount(1);
 });
 
 test("a general quiz begins with the question the Learner got wrong", async ({ page }) => {
@@ -253,7 +204,8 @@ test("quizzes work offline and attempts count after the app reopens", async ({ p
   await reopened.getByRole("button", { name: "Start general quiz" }).click();
 
   expect((await currentQuestion(reopened)).id).toBe(missed.id);
-  expect(await storedAttempts(reopened)).toHaveLength(1);
+  await openArea(reopened, "Progress");
+  await expect(quizResult(reopened, "100 most common French words")).toContainText("1 attempt");
 });
 
 test("the longest question fits the screen", async ({ page }) => {
@@ -331,5 +283,12 @@ test("data saved before quizzes existed survives the upgrade", async ({ page }) 
   await startTopicQuiz(page, "The subjunctive");
   await answer(page, { correctly: true });
   await expect(quizQuestion(page)).toContainText("Question 2 of 20");
-  expect(await storedAttempts(page)).toHaveLength(1);
+  await openArea(page, "Progress");
+  await expect(quizResult(page, "The subjunctive")).toContainText("1 attempt");
+  await expect(
+    page
+      .getByRole("region", { name: "Flashcard ratings" })
+      .getByRole("listitem")
+      .filter({ hasText: "Mes mots" }),
+  ).toContainText("Average 2.0");
 });
