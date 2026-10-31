@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useIsOnline } from "./connection";
 import { GrammarArea } from "./grammar/GrammarArea";
 import { useIsOfflineReady } from "./offlineReady";
+import { VocabularyArea } from "./vocabulary/VocabularyArea";
 
 const areas = ["Vocabulary", "Grammar", "Progress"] as const;
 type Area = (typeof areas)[number];
@@ -42,6 +43,7 @@ export function App() {
 
       <main className="shell-main">
         <h2>{area}</h2>
+        {area === "Vocabulary" && <VocabularyArea />}
         {area === "Grammar" && <GrammarArea />}
       </main>
     </div>
