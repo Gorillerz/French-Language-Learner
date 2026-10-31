@@ -2,8 +2,13 @@ import { useEffect, useState } from "react";
 import type { RatingValue } from "../db";
 import { grammarConcepts, type GrammarConcept } from "./content";
 import { FlashcardPractice } from "./FlashcardPractice";
-import { directions, type Direction } from "./flashcards";
-import { averageRating, loadConceptRatings } from "./ratings";
+import {
+  directions,
+  saveDefaultDirection,
+  useDefaultDirection,
+  type Direction,
+} from "./flashcards";
+import { averageRating, useConceptRatings } from "./ratings";
 
 function describeRatings(ratings: RatingValue[]) {
   if (ratings.length === 0) return "No ratings yet";
@@ -48,17 +53,24 @@ type ConceptPageProps = {
 };
 
 function ConceptPage({ concept, onPractise, onBack }: ConceptPageProps) {
-  const [ratings, setRatings] = useState<RatingValue[] | null>(null);
+  const ratings = useConceptRatings(concept.id);
+  const defaultDirection = useDefaultDirection();
+  // Set straight away on a choice, so it can't lag behind the save, and follows
+  // whatever is saved next, including from another device.
+  const [direction, setDirection] = useState(defaultDirection);
+  const [saveFailed, setSaveFailed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    loadConceptRatings(concept.id).then((loaded) => {
-      if (!cancelled) setRatings(loaded);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [concept.id]);
+  useEffect(() => setDirection(defaultDirection), [defaultDirection]);
+
+  async function chooseDirection(choice: Direction) {
+    setDirection(choice);
+    setSaveFailed(false);
+    try {
+      await saveDefaultDirection(choice);
+    } catch {
+      setSaveFailed(true);
+    }
+  }
 
   return (
     <article className="concept">
@@ -83,18 +95,30 @@ function ConceptPage({ concept, onPractise, onBack }: ConceptPageProps) {
 
       <h4>Sentence flashcards</h4>
       {ratings && <p className="translation">{describeRatings(ratings)}</p>}
-      <div className="practice-buttons">
-        {directions.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="action-button"
-            onClick={() => onPractise(item)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {direction && (
+        <>
+          <fieldset className="direction-choice">
+            <legend>Default direction</legend>
+            {directions.map((item) => (
+              <label key={item.id}>
+                <input
+                  type="radio"
+                  name="flashcard-direction"
+                  checked={item.id === direction.id}
+                  onChange={() => chooseDirection(item)}
+                />
+                {item.label}
+              </label>
+            ))}
+          </fieldset>
+          {saveFailed && <p role="alert">That choice couldn't be saved. Please try again.</p>}
+          <div className="practice-buttons">
+            <button type="button" className="action-button" onClick={() => onPractise(direction)}>
+              Practise flashcards
+            </button>
+          </div>
+        </>
+      )}
     </article>
   );
 }

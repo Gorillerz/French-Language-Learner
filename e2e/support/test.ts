@@ -1,4 +1,9 @@
-import { test as base, type BrowserContext, type Page } from "@playwright/test";
+import {
+  test as base,
+  type BrowserContext,
+  type BrowserContextOptions,
+  type Page,
+} from "@playwright/test";
 import { CloudStandIn } from "./cloud-stand-in";
 import { aiPort, cloudPort } from "./ports";
 import { ServiceStandIn } from "./service-stand-in";
@@ -15,7 +20,7 @@ type Fixtures = {
   /** The AI service the app is built against. */
   ai: ServiceStandIn;
   /** Opens the app on another device: a separate context, so separate storage. */
-  newDevice: () => Promise<Page>;
+  newDevice: (options?: BrowserContextOptions) => Promise<Page>;
 };
 
 /**
@@ -27,8 +32,8 @@ export const test = base.extend<Fixtures>({
   ai: [({}, use) => runStandIn(new ServiceStandIn(aiPort), use), { auto: true }],
   newDevice: async ({ browser, baseURL }, use) => {
     const contexts: BrowserContext[] = [];
-    await use(async () => {
-      const context = await browser.newContext({ baseURL: baseURL! });
+    await use(async (options) => {
+      const context = await browser.newContext({ ...options, baseURL: baseURL! });
       contexts.push(context);
       const page = await context.newPage();
       await page.goto("/");

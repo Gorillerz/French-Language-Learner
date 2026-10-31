@@ -1,3 +1,4 @@
+import { useLiveQuery } from "dexie-react-hooks";
 import { db, type FlashcardRating, type RatingValue } from "../db";
 
 type NewRating = Pick<FlashcardRating, "cardId" | "topicId" | "rating" | "sessionId">;
@@ -13,13 +14,15 @@ export async function saveGrammarRating(rating: NewRating) {
   });
 }
 
-export async function loadConceptRatings(conceptId: string): Promise<RatingValue[]> {
-  const rows = await db.flashcardRatings
-    .where("topicId")
-    .equals(conceptId)
-    .filter((row) => row.kind === "grammar")
-    .toArray();
-  return rows.map((row) => row.rating);
+export function useConceptRatings(conceptId: string): RatingValue[] | undefined {
+  return useLiveQuery(async () => {
+    const rows = await db.flashcardRatings
+      .where("topicId")
+      .equals(conceptId)
+      .filter((row) => row.kind === "grammar")
+      .toArray();
+    return rows.map((row) => row.rating);
+  }, [conceptId]);
 }
 
 export function averageRating(ratings: RatingValue[]) {
